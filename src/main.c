@@ -11,8 +11,8 @@
 static
 int
 HandleEvent( SDL_Event *event,
-              struct GameInput *old_input,
-              struct GameInput *new_input )
+             struct GameInput *old_input,
+             struct GameInput *new_input )
 {
     switch (event->type) {
         case SDL_KEYDOWN:
@@ -22,7 +22,16 @@ HandleEvent( SDL_Event *event,
             bool is_down  = event->key.repeat != 0 || event->key.state == SDL_PRESSED;
 
             if (was_down != is_down) {
-                /* iterate over keys and set new values in input */
+                /* Read over each key defined in config.h */
+#define READ_KEY(keycode, control) \
+                if (event->key.keysym.sym == keycode) { \
+                    new_input->control.was_down = is_down; \
+                    new_input->control.half_count += \
+                        (old_input->control.was_down != new_input->control.was_down) ? 1 : 0; \
+                }
+
+                KEY_BINDING(READ_KEY);
+#undef READ_KEY
             }
         } break;
         case SDL_QUIT:
@@ -39,7 +48,7 @@ HandleEvent( SDL_Event *event,
 static
 int
 InitWindowAndRenderer( SDL_Window **window,
-                          SDL_Renderer **renderer )
+                       SDL_Renderer **renderer )
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LOG("Error initializing SDL");
