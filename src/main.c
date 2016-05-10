@@ -179,6 +179,9 @@ main( int argc,
 
             if (game_lib.UpdateAndRender)
                 game_lib.UpdateAndRender(&memory, &new_input, renderer);
+
+            if (new_input.quit.was_down)
+                done = 1;
         }
 
         UnloadGame(&game_lib);

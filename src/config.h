@@ -1,10 +1,11 @@
+/* ensure there's only one of each bound name */
 #define KEY_BINDING(_def) \
-    _def(SDLK_a, move_left) \
-    _def(SDLK_d, move_right) \
-    _def(SDLK_w, move_up) \
-    _def(SDLK_s, move_down) \
-    _def(SDLK_SPACE, move_down) \
-    _def(SDLK_ESCAPE, quit) \
+    _def(SDLK_a, move_left); \
+    _def(SDLK_d, move_right); \
+    _def(SDLK_w, move_up); \
+    _def(SDLK_s, move_down); \
+    _def(SDLK_SPACE, move_down); \
+    _def(SDLK_ESCAPE, quit); \
 
 #define CONFIG_PROJ_NAME "proto"
 #define CONFIG_SCRN_WIDTH  960
