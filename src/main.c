@@ -1,5 +1,7 @@
 #include <SDL2/SDL.h>
 
+#include <stdlib.h>
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
@@ -8,7 +10,7 @@
 
 static
 int
-handle_event( SDL_Event *event,
+HandleEvent( SDL_Event *event,
               struct GameInput *old_input,
               struct GameInput *new_input )
 {
@@ -36,8 +38,8 @@ handle_event( SDL_Event *event,
 
 static
 int
-init_window_and_renderer( SDL_Window **window,
-                          SDL_Renderer *renderer )
+InitWindowAndRenderer( SDL_Window **window,
+                          SDL_Renderer **renderer )
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         SDL_LOG("Error initializing SDL");
@@ -70,34 +72,34 @@ init_window_and_renderer( SDL_Window **window,
 
 static
 int
-load_game(struct GameLib *game_lib)
+LoadGame(struct GameLib *game_lib)
 {
     struct stat file_stat;
-    if (stat("libgame.so", &file_stat) == 0) {
+    if (stat("./libgame.so", &file_stat) == 0) {
         /* check whether lib has been updated in last run */
         if (game_lib->ino != file_stat.st_ino) {
             game_lib->ino = file_stat.st_ino;
-            game_lib->update_and_render = NULL;
+            game_lib->UpdateAndRender = NULL;
         }
     }
 
     /* only load lib when there isn't anything valid */
-    if (game_lib->update_and_render == NULL) {
+    if (game_lib->UpdateAndRender == NULL) {
         if (game_lib->lib) /* ensure we don't have a lib open */
             dlclose(game_lib->lib);
 
-        game_lib->lib = dlopen("libgame.so", RTLD_LAZY);
+        game_lib->lib = dlopen("./libgame.so", RTLD_LAZY);
         if (!game_lib->lib) {
             fprintf(stderr, "failed to open lib: %s\n", dlerror());
-            game_lib->update_and_render = NULL;
+            game_lib->UpdateAndRender = NULL;
             return -1;
         } else {
             dlerror(); /* required to clear the error stack */
-            game_lib->update_and_render = (upd_and_ren_t *)dlsym(game_lib->lib, "update_and_render");
+            game_lib->UpdateAndRender = (upd_and_ren_t *)dlsym(game_lib->lib, "UpdateAndRender");
             const char *err = dlerror();
             if (err) {
                 fprintf(stderr, "failed to load function: %s\n", err);
-                game_lib->update_and_render = NULL;
+                game_lib->UpdateAndRender = NULL;
                 return -2;
             }
         }
@@ -108,11 +110,11 @@ load_game(struct GameLib *game_lib)
 
 static
 void
-unload_game(struct GameLib *game_lib)
+UnloadGame(struct GameLib *game_lib)
 {
     if (game_lib->lib)
         dlclose(game_lib->lib);
-    game_lib->update_and_render = NULL;
+    game_lib->UpdateAndRender = NULL;
 }
 
 int
@@ -122,11 +124,11 @@ main( int argc,
     SDL_Window *window;
     SDL_Renderer *renderer;
 
-    if (init_window_and_renderer(&window, &renderer) == 0) {
+    if (InitWindowAndRenderer(&window, &renderer) == 0) {
         /* preallocate memory to prevent malloc/free usage */
         struct GameMemory memory = { 0 };
-        memory.perm_memsize = Megabytes(64);
-        memory.temp_memsize = Megabytes(64);
+        memory.perm_memsize = MEGABYTES(64);
+        memory.temp_memsize = MEGABYTES(64);
         memory.perm_mem = mmap( 0, memory.perm_memsize + memory.temp_memsize, PROT_READ | PROT_WRITE,
                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
         memory.temp_mem = (char *)memory.perm_mem + memory.perm_memsize;
@@ -140,7 +142,7 @@ main( int argc,
         SDL_RenderSetLogicalSize(renderer, scrn_w * 2, scrn_h * 2);
 
         struct GameLib game_lib  = { 0 };
-        load_game(&game_lib);
+        LoadGame(&game_lib);
 
         u64 prev_count     = SDL_GetPerformanceCounter();
         u64 curr_count     = SDL_GetPerformanceCounter();
@@ -152,13 +154,13 @@ main( int argc,
 
             SDL_Event event;
             while (SDL_PollEvent(&event))
-                done = handle_event(&event, &old_input, &new_input);
+                done = HandleEvent(&event, &old_input, &new_input);
 
             prev_count = curr_count;
             curr_count = SDL_GetPerformanceCounter();
 
             /* delay is inaccurate, so we loop after doing ~1/2 the wait time */
-            SDL_Delay((1000.0/GOAL_FPS) - ( ((curr_count - prevCount) > 0)
+            SDL_Delay((1000.0/GOAL_FPS) - ( ((curr_count - prev_count) > 0)
                                             ? 1000 * ((curr_count - prev_count)/count_ps)
                                             : 1000.0f / GOAL_FPS ) * 0.50f);
             do {
@@ -166,11 +168,11 @@ main( int argc,
             } while (count_ps / (curr_count - prev_count) > GOAL_FPS);
             new_input.dt = (double)(curr_count - prev_count) / count_ps;
 
-            if (game_lib.update_and_render)
-                game_lib.update_and_render(&memory, &new_input, renderer);
+            if (game_lib.UpdateAndRender)
+                game_lib.UpdateAndRender(&memory, &new_input, renderer);
         }
 
-        unload_game(&game_lib);
+        UnloadGame(&game_lib);
         SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
         SDL_Quit();
