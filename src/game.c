@@ -1,9 +1,19 @@
 #include <SDL2/SDL.h>
 #include "main.h"
+#include "game.h"
 
 extern
-void
-UpdateAndRender(struct GameMemory *memory, struct GameInput *input, SDL_Renderer *renderer)
+UPDATE(Update) /* memory, input */
+{
+    struct GameState *state = (struct GameState *)memory;
+
+    if (!state->init) {
+        state->init = true;
+    }
+}
+
+extern
+RENDER(Render) /* memory, renderer, dt */
 {
     SDL_SetRenderDrawColor(renderer, 125, 125, 125, 255);
     SDL_RenderClear(renderer);

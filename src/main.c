@@ -88,27 +88,31 @@ LoadGame(struct GameLib *game_lib)
         /* check whether lib has been updated in last run */
         if (game_lib->ino != file_stat.st_ino) {
             game_lib->ino = file_stat.st_ino;
-            game_lib->UpdateAndRender = NULL;
+            game_lib->Update = NULL;
+            game_lib->Render = NULL;
         }
     }
 
     /* only load lib when there isn't anything valid */
-    if (game_lib->UpdateAndRender == NULL) {
+    if (game_lib->Update == NULL) {
         if (game_lib->lib) /* ensure we don't have a lib open */
             dlclose(game_lib->lib);
 
         game_lib->lib = dlopen("./libgame.so", RTLD_LAZY);
         if (!game_lib->lib) {
             fprintf(stderr, "failed to open lib: %s\n", dlerror());
-            game_lib->UpdateAndRender = NULL;
+            game_lib->Update = NULL;
+            game_lib->Render = NULL;
             return -1;
         } else {
             dlerror(); /* required to clear the error stack */
-            game_lib->UpdateAndRender = (upd_and_ren_t *)dlsym(game_lib->lib, "UpdateAndRender");
+            game_lib->Update = (Update_t *)dlsym(game_lib->lib, "Update");
+            game_lib->Render = (Render_t *)dlsym(game_lib->lib, "Render");
             const char *err = dlerror();
             if (err) {
                 fprintf(stderr, "failed to load function: %s\n", err);
-                game_lib->UpdateAndRender = NULL;
+                game_lib->Update = NULL;
+                game_lib->Render = NULL;
                 return -2;
             }
         }
@@ -123,7 +127,8 @@ UnloadGame(struct GameLib *game_lib)
 {
     if (game_lib->lib)
         dlclose(game_lib->lib);
-    game_lib->UpdateAndRender = NULL;
+    game_lib->Update = NULL;
+    game_lib->Render = NULL;
 }
 
 int
@@ -162,35 +167,39 @@ main( int argc,
             struct GameLib game_lib  = { 0 };
             LoadGame(&game_lib);
 
-            u64 prev_count     = SDL_GetPerformanceCounter();
-            u64 curr_count     = SDL_GetPerformanceCounter();
-            const u64 count_ps = SDL_GetPerformanceFrequency();
+            /* loop variables to keep timing right */
+            u64 lag             = 0;
+            u64 prev_count      = SDL_GetPerformanceCounter();
+            u64 curr_count      = SDL_GetPerformanceCounter();
+            const u64 count_ps  = SDL_GetPerformanceFrequency();
+            const u64 count_pms = count_ps / 1000;
 
-            int done = 0;
+            bool done = false;
             while (!done) {
+                curr_count = SDL_GetPerformanceCounter();
+                lag += curr_count - prev_count;
+                prev_count = curr_count;
+
+                /* swap input buffers */
                 old_input = new_input;
 
                 SDL_Event event;
                 while (SDL_PollEvent(&event))
                     done = HandleEvent(&event, &old_input, &new_input);
 
-                prev_count = curr_count;
-                curr_count = SDL_GetPerformanceCounter();
+                /* fixed time step */
+                while (lag >= MS_PER_UPDATE*count_pms) {
+                    if (game_lib.Update)
+                        game_lib.Update(&memory, &new_input);
+                    lag -= MS_PER_UPDATE*count_pms;
+                }
 
-                /* delay is inaccurate, so we loop after doing ~1/2 the wait time */
-                SDL_Delay((1000.0/GOAL_FPS) - ( ((curr_count - prev_count) > 0)
-                                                ? 1000 * ((curr_count - prev_count)/count_ps)
-                                                : 1000.0f / GOAL_FPS ) * 0.50f);
-                do {
-                    curr_count = SDL_GetPerformanceCounter();
-                } while (count_ps / (curr_count - prev_count) > GOAL_FPS);
-                new_input.dt = (double)(curr_count - prev_count) / count_ps;
-
-                if (game_lib.UpdateAndRender)
-                    game_lib.UpdateAndRender(&memory, &new_input, renderer);
+                /* render, ensure we can update by a fraction of update interval */
+                if (game_lib.Render)
+                    game_lib.Render(&memory, renderer, (r64)(lag)/(r64)(count_pms));
 
                 if (new_input.quit.was_down)
-                    done = 1;
+                    done = true;
             }
 
             UnloadGame(&game_lib);

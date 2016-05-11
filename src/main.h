@@ -35,13 +35,18 @@ struct GameMemory {
     void *temp_mem;
 };
 
-typedef void upd_and_ren_t(struct GameMemory *, struct GameInput *, SDL_Renderer *);
+#define UPDATE(name) void name(struct GameMemory *memory, struct GameInput *input)
+typedef UPDATE(Update_t);
+
+#define RENDER(name) void name(struct GameMemory *memory, SDL_Renderer *renderer, r64 dt)
+typedef RENDER(Render_t);
 
 struct GameLib {
     ino_t ino;
 
     void *lib;
-    upd_and_ren_t *UpdateAndRender;
+    Update_t *Update;
+    Render_t *Render;
 };
 
 #define _MAIN_h_

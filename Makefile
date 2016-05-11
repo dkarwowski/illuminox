@@ -12,24 +12,27 @@ CFLAGS := -fPIC -I/usr/local/include/SDL2 -D_THREAD_SAFE
 WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -O0 -DDEBUG -g
 LIBS = -ldl -lm -lSDL2 -lSDL2_ttf -L/usr/local/lib
 
-default: $(TARGET) $(GAME)
-	@echo "-> Done"
+default: $(GAME)
+	@echo -e "\e[1;92m-> Done \e[0m"
+
+all: $(TARGET) $(GAME)
+	@echo -e "\e[1;92m-> Done\e[0m"
 
 $(TARGET): $(BUILDDIR)/main.o
-	@echo "-> Creating main... "
+	@echo -e "\e[1;94m-> Creating main... \e[0m"
 	$(CC) $^ -o $(TARGETDIR)/$(TARGET) $(LIBS)
 
 $(GAME): $(OBJECTS)
-	@echo "-> Creating libgame.so... "
+	@echo -e "\e[1;94m-> Creating libgame.so... \e[0m"
 	$(CC) $(CFLAGS) $(WFLAGS) $^ -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
-	@echo "-> Creating all *.o..."
+	@echo -e "\e[1;96m-> Creating $@...\e[0m"
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) $(WFLAGS) -c -o $@ $<
 
 clean:
-	@echo " Cleaning... "
+	@echo -e "\e[1;91m-> Cleaning... \e[0m"
 	rm -r $(BUILDDIR)/* $(TARGETDIR)/*
 
 .PHONY: clean

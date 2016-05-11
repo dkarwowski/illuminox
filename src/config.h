@@ -11,6 +11,7 @@
 #define CONFIG_SCRN_WIDTH  960
 #define CONFIG_SCRN_HEIGHT 560
 
+#define MS_PER_UPDATE 2
 #define GOAL_FPS 60
 
 typedef uint8_t     u8;
