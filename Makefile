@@ -1,4 +1,4 @@
-CC := clang
+CC := gcc
 SRCDIR := src
 BUILDDIR := build
 TARGETDIR := bin

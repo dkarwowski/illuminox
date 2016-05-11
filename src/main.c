@@ -140,57 +140,68 @@ main( int argc,
         memory.temp_memsize = MEGABYTES(64);
         memory.perm_mem = mmap( 0, memory.perm_memsize + memory.temp_memsize, PROT_READ | PROT_WRITE,
                                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0 );
-        memory.temp_mem = (char *)memory.perm_mem + memory.perm_memsize;
+        if (memory.perm_mem == MAP_FAILED) {
+            fprintf(stderr, "Couldn't create memory map\n");
 
-        struct GameInput old_input = { 0 };
-        struct GameInput new_input = { 0 };
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
 
-        /* we want double renderer for better drawing */
-        int scrn_w, scrn_h;
-        SDL_GetWindowSize(window, &scrn_w, &scrn_h);
-        SDL_RenderSetLogicalSize(renderer, scrn_w * 2, scrn_h * 2);
+            return 2;
+        } else {
+            memory.temp_mem = (char *)memory.perm_mem + memory.perm_memsize;
 
-        struct GameLib game_lib  = { 0 };
-        LoadGame(&game_lib);
+            struct GameInput old_input = { 0 };
+            struct GameInput new_input = { 0 };
 
-        u64 prev_count     = SDL_GetPerformanceCounter();
-        u64 curr_count     = SDL_GetPerformanceCounter();
-        const u64 count_ps = SDL_GetPerformanceFrequency();
+            /* we want double renderer for better drawing */
+            int scrn_w, scrn_h;
+            SDL_GetWindowSize(window, &scrn_w, &scrn_h);
+            SDL_RenderSetLogicalSize(renderer, scrn_w * 2, scrn_h * 2);
 
-        int done = 0;
-        while (!done) {
-            old_input = new_input;
+            struct GameLib game_lib  = { 0 };
+            LoadGame(&game_lib);
 
-            SDL_Event event;
-            while (SDL_PollEvent(&event))
-                done = HandleEvent(&event, &old_input, &new_input);
+            u64 prev_count     = SDL_GetPerformanceCounter();
+            u64 curr_count     = SDL_GetPerformanceCounter();
+            const u64 count_ps = SDL_GetPerformanceFrequency();
 
-            prev_count = curr_count;
-            curr_count = SDL_GetPerformanceCounter();
+            int done = 0;
+            while (!done) {
+                old_input = new_input;
 
-            /* delay is inaccurate, so we loop after doing ~1/2 the wait time */
-            SDL_Delay((1000.0/GOAL_FPS) - ( ((curr_count - prev_count) > 0)
-                                            ? 1000 * ((curr_count - prev_count)/count_ps)
-                                            : 1000.0f / GOAL_FPS ) * 0.50f);
-            do {
+                SDL_Event event;
+                while (SDL_PollEvent(&event))
+                    done = HandleEvent(&event, &old_input, &new_input);
+
+                prev_count = curr_count;
                 curr_count = SDL_GetPerformanceCounter();
-            } while (count_ps / (curr_count - prev_count) > GOAL_FPS);
-            new_input.dt = (double)(curr_count - prev_count) / count_ps;
 
-            if (game_lib.UpdateAndRender)
-                game_lib.UpdateAndRender(&memory, &new_input, renderer);
+                /* delay is inaccurate, so we loop after doing ~1/2 the wait time */
+                SDL_Delay((1000.0/GOAL_FPS) - ( ((curr_count - prev_count) > 0)
+                                                ? 1000 * ((curr_count - prev_count)/count_ps)
+                                                : 1000.0f / GOAL_FPS ) * 0.50f);
+                do {
+                    curr_count = SDL_GetPerformanceCounter();
+                } while (count_ps / (curr_count - prev_count) > GOAL_FPS);
+                new_input.dt = (double)(curr_count - prev_count) / count_ps;
 
-            if (new_input.quit.was_down)
-                done = 1;
+                if (game_lib.UpdateAndRender)
+                    game_lib.UpdateAndRender(&memory, &new_input, renderer);
+
+                if (new_input.quit.was_down)
+                    done = 1;
+            }
+
+            UnloadGame(&game_lib);
+
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+
+            return 0;
         }
-
-        UnloadGame(&game_lib);
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-
-        return 0;
     } else {
-        return -1;
+        return 1;
     }
 }
