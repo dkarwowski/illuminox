@@ -1,5 +1,6 @@
 /* ensure there's only one of each bound name */
 #define KEY_BINDING(_def) \
+    _def(SDLK_BACKQUOTE, console); \
     _def(SDLK_a, move_left); \
     _def(SDLK_d, move_right); \
     _def(SDLK_w, move_up); \

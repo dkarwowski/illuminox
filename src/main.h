@@ -3,27 +3,44 @@
 #include <stdint.h>
 #include "config.h"
 
-struct GameControl {
-    u64 was_down;
-    u64 half_count;
-};
+typedef struct {
+    bool was_down;
+    u64  half_count;
+    u64  last_read;
+} GameControl_t;
+
+static inline
+bool
+C_IsToggled(GameControl_t *control)
+{
+    bool result = control->was_down && (control->last_read != control->half_count);
+    control->last_read = result ? control->half_count : control->last_read;
+    return result;
+}
+
+static inline
+bool
+C_IsPressed(GameControl_t *control)
+{
+    return control->was_down;
+}
 
 struct GameInput {
     union {
-        struct GameControl control[5];
+        GameControl_t control[5];
 
         struct {
-            struct GameControl move_left;
-            struct GameControl move_right;
-            struct GameControl move_up;
-            struct GameControl move_down;
-            struct GameControl action;
+            GameControl_t move_left;
+            GameControl_t move_right;
+            GameControl_t move_up;
+            GameControl_t move_down;
+            GameControl_t action;
 
-            struct GameControl quit;
+            GameControl_t console;
+
+            GameControl_t quit;
         };
     };
-
-    r64 dt;
 };
 
 struct GameMemory {

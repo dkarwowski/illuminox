@@ -23,12 +23,12 @@ HandleEvent( SDL_Event *event,
 
             if (was_down != is_down) {
                 /* Read over each key defined in config.h */
-#define READ_KEY(keycode, control) \
-                if (event->key.keysym.sym == keycode) { \
-                    new_input->control.was_down = is_down; \
-                    new_input->control.half_count += \
+#define READ_KEY(keycode, control)                                                            \
+                if (event->key.keysym.sym == keycode) {                                       \
+                    new_input->control.was_down = is_down;                                    \
+                    new_input->control.half_count +=                                          \
                         (old_input->control.was_down != new_input->control.was_down) ? 1 : 0; \
-                }
+                }                                                                             \
 
                 KEY_BINDING(READ_KEY);
 #undef READ_KEY
@@ -154,6 +154,7 @@ main( int argc,
 
             return 2;
         } else {
+            memset(memory.perm_mem, 0, memory.perm_memsize + memory.temp_memsize);
             memory.temp_mem = (char *)memory.perm_mem + memory.perm_memsize;
 
             struct GameInput old_input = { 0 };
