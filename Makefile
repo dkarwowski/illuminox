@@ -9,7 +9,7 @@ SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 CFLAGS := -fPIC $(shell sdl2-config --cflags) -D_THREAD_SAFE
-WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -O0 -DDEBUG -g
+WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -O2 -DDEBUG -g
 LIBS = -ldl -lm $(shell sdl2-config --libs) -lSDL2_ttf
 
 default: $(GAME)

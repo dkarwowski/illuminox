@@ -213,6 +213,12 @@ main( int argc,
 
                 /* fixed time step */
                 while (lag >= MS_PER_UPDATE*count_pms) {
+                    if (new_input.reload_lib) {
+                        UnloadGame(&game_lib);
+                        LoadGame(&game_lib);
+                        new_input.reload_lib = false;
+                    }
+
                     if (game_lib.Update)
                         game_lib.Update(&memory, &new_input);
                     lag -= MS_PER_UPDATE*count_pms;
@@ -224,12 +230,6 @@ main( int argc,
 
                 if (new_input.quit.was_down)
                     done = true;
-
-                if (new_input.reload_lib) {
-                    UnloadGame(&game_lib);
-                    LoadGame(&game_lib);
-                    new_input.reload_lib = false;
-                }
             }
 
             UnloadGame(&game_lib);

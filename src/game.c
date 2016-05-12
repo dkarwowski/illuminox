@@ -19,8 +19,15 @@ C_ExecuteCommand(struct GameState *state, struct GameInput *input)
 {
     if (strcmp(input->input_text, "reload") == 0) {
         input->reload_lib = true;
+    } else if (strcmp(input->input_text, "restart") == 0) {
+        input->reload_lib = true;
+        state->init = false;
     } else if (strcmp(input->input_text, "quit") == 0) {
         input->quit.was_down = true;
+    } else if (strcmp(input->input_text, "clear") == 0) {
+        for (int i = 0; i < 10; state->buffer[i++][0] = '\0') /* that's it */;
+        input->input_text[0] = '\0';
+        input->input_len = 0;
     } else if (strcmp(input->input_text, "") == 0) {
         /* do nothing */
     } else { /* text entered was invalid, so say so */
@@ -63,13 +70,15 @@ UPDATE(Update) /* memory, input */
         }
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
-        if (TTF_Init() == -1) {
-            state->font = NULL;
-            fprintf(stderr, "Can't initialize TTF\n");
-        } else {
-            state->font = TTF_OpenFont("../res/VeraMono.ttf", 26);
-            if (state->font == NULL)
-                fprintf(stderr, "Can't open the font: %s\n", TTF_GetError());
+        if (!TTF_WasInit()) {
+            if (TTF_Init() == -1) {
+                state->font = NULL;
+                fprintf(stderr, "Can't initialize TTF\n");
+            } else {
+                state->font = TTF_OpenFont("../res/VeraMono.ttf", 26);
+                if (state->font == NULL)
+                    fprintf(stderr, "Can't open the font: %s\n", TTF_GetError());
+            }
         }
 
         /* TODO(david): remove hard coded buffer length */
@@ -86,7 +95,8 @@ UPDATE(Update) /* memory, input */
     } else {
         input->input_entered = false;
     }
-    /* always perform this copy, ensures our final buffer has up to date command */
+
+    /* always perform this copy, ensures our final buffer is updated */
     memcpy(state->buffer[0], input->input_text, input->input_len + 1);
 
     /* handle everything for quitting out immediately */
@@ -105,6 +115,12 @@ UPDATE(Update) /* memory, input */
         else
             SDL_StopTextInput();
     }
+
+    /* we don't want to actually do any of the real updating if the console
+     * is currently running. This allows for us to make changes and then,
+     * in a sense, resume the game with those changes in place */
+    if (state->console)
+        return;
 }
 
 /**
