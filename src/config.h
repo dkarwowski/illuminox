@@ -15,23 +15,28 @@
 #define MS_PER_UPDATE 2
 #define GOAL_FPS 60
 
-typedef  uint8_t        u8;
-typedef  uint16_t       u16;
-typedef  uint32_t       u32;
-typedef  uint64_t       u64;
+/* define true and false stuff here, no stdbool */
+#define true          1
+#define false         0
+#define bool          _Bool
 
-typedef  int8_t         i8;
-typedef  int16_t        i16;
-typedef  int32_t        i32;
-typedef  int64_t        i64;
+typedef uint8_t       u8;
+typedef uint16_t      u16;
+typedef uint32_t      u32;
+typedef uint64_t      u64;
 
-typedef  unsigned char  byte;
+typedef int8_t        i8;
+typedef int16_t       i16;
+typedef int32_t       i32;
+typedef int64_t       i64;
 
-typedef  float          r32;
-typedef  double         r64;
+typedef unsigned char byte;
 
-typedef  intptr_t       iptr;
-typedef  uintptr_t      uptr;
+typedef float         r32;
+typedef double        r64;
+
+typedef intptr_t      iptr;
+typedef uintptr_t     uptr;
 
 #define SDL_LOG(msg) fprintf(stderr, msg ": %s\n", SDL_GetError())
 

@@ -1,6 +1,4 @@
 #ifndef _MAIN_h_
-#include <stdbool.h>
-#include <stdint.h>
 #include "config.h"
 
 /* Consider moving this stuff out to it's own file? */
