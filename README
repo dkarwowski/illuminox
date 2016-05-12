@@ -1,0 +1,17 @@
+# Proto
+
+A prototype game being built up over time, currently intended to just flesh
+out various ideas for a 2d top-down style RPG, preferrably with randomized
+components spread throughout.
+
+## Building
+
+The build process should be easy, simply run `make all` to create the entire
+game. Then you can run by entering the `bin/` directory and running `./proto`
+from in there.
+
+## License
+
+Currently no license, not sure what I'm going to end up going with once I
+start fleshing out the actual game. The main.c file is fairly open for grabs
+at the moment, given that it's almost all just boilerplate SDL2 stuff.

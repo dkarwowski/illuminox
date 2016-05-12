@@ -62,7 +62,7 @@ UPDATE(Update) /* memory, input */
             }
         }
 
-        /** Initialize font as best possible, if it fails then ensure it's NULL */
+        /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (TTF_Init() == -1) {
             state->font = NULL;
             fprintf(stderr, "Can't initialize TTF\n");
@@ -78,6 +78,7 @@ UPDATE(Update) /* memory, input */
         }
     }
 
+    /* Handle Input ------------------------------------------------------- */
     if (input->input_entered && input->input_len > 0) {
         for (int i = 9; i > 1; i--)
             memcpy(state->buffer[i], state->buffer[i-1], sizeof(state->buffer[i]));
@@ -88,6 +89,7 @@ UPDATE(Update) /* memory, input */
     /* always perform this copy, ensures our final buffer has up to date command */
     memcpy(state->buffer[0], input->input_text, input->input_len + 1);
 
+    /* handle everything for quitting out immediately */
     if (C_IsPressed(&input->quit)) {
         TTF_CloseFont(state->font);
         state->font = NULL;
