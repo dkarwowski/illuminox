@@ -57,6 +57,9 @@ struct GameInput {
     bool input_entered;
     char input_text[128];
     int  input_len;
+
+    /* ensure we know when to reload */
+    bool reload_lib;
 };
 
 struct GameMemory {

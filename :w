@@ -1,40 +1,7 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
-
 #include "main.h"
 #include "game.h"
-
-/**
- * Execute a console command that was entered
- *
- * @state : the current game state in case it needs to be manipulated
- * @input : the current state of the input keys
- *
- * The current command should still be stored in the input->input_text
- * field. It'll work either way, just come out as empty space. Any
- * command that isn't handled is replaced with invalid.
- */
-void
-C_ExecuteCommand(struct GameState *state, struct GameInput *input)
-{
-    if (strcmp(input->input_text, "reload") == 0) {
-        input->reload_lib = true;
-    } else if (strcmp(input->input_text, "quit") == 0) {
-        input->quit.was_down = true;
-    } else if (strcmp(input->input_text, "") == 0) {
-        /* do nothing */
-    } else { /* text entered was invalid, so say so */
-        memcpy(input->input_text, "invalid", 8);
-        input->input_len = 8;
-    }
-
-    memcpy(state->buffer[1], input->input_text, input->input_len + 1);
-
-    /* cleanup the input text now */
-    input->input_entered = false;
-    input->input_text[0] = '\0';
-    input->input_len = 0;
-}
 
 /**
  * Update the game state and objects
@@ -70,6 +37,8 @@ UPDATE(Update) /* memory, input */
             state->font = TTF_OpenFont("../res/VeraMono.ttf", 26);
             if (state->font == NULL)
                 fprintf(stderr, "Can't open the font: %s\n", TTF_GetError());
+            else
+                TTF_SetFontHinting(state->font, TTF_HINTING_MONO);
         }
 
         /* TODO(david): remove hard coded buffer length */
@@ -78,16 +47,6 @@ UPDATE(Update) /* memory, input */
         }
     }
 
-    if (input->input_entered && input->input_len > 0) {
-        for (int i = 9; i > 1; i--)
-            memcpy(state->buffer[i], state->buffer[i-1], sizeof(state->buffer[i]));
-        C_ExecuteCommand(state, input);
-    } else {
-        input->input_entered = false;
-    }
-    /* always perform this copy, ensures our final buffer has up to date command */
-    memcpy(state->buffer[0], input->input_text, input->input_len + 1);
-
     if (C_IsPressed(&input->quit)) {
         TTF_CloseFont(state->font);
         state->font = NULL;
@@ -95,6 +54,19 @@ UPDATE(Update) /* memory, input */
 
         return;
     }
+
+    if (input->input_entered && input->input_len > 0) {
+        for (int i = 9; i > 1; i--)
+            memcpy(state->buffer[i], state->buffer[i-1], sizeof(state->buffer[i]));
+        memcpy(state->buffer[1], input->input_text, input->input_len + 1);
+        input->input_entered = false;
+        input->input_text[0] = '\0';
+        input->input_len = 0;
+    } else {
+        input->input_entered = false;
+    }
+    /* always perform this copy, ensures our final buffer has up to date command */
+    memcpy(state->buffer[0], input->input_text, input->input_len + 1);
 
     if (C_IsToggled(&input->console)) {
         state->console = !state->console;

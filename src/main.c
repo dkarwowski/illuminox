@@ -45,7 +45,7 @@ HandleEvent( SDL_Event *event,
         case SDL_TEXTINPUT:
         {
             char *input = event->text.text;
-            while (*input != '\0' && new_input->input_len < 128) {
+            while (*input != '\0' && new_input->input_len < 127) {
                 if (*input == '`') {
                     input++;
                     continue;
@@ -224,6 +224,12 @@ main( int argc,
 
                 if (new_input.quit.was_down)
                     done = true;
+
+                if (new_input.reload_lib) {
+                    UnloadGame(&game_lib);
+                    LoadGame(&game_lib);
+                    new_input.reload_lib = false;
+                }
             }
 
             UnloadGame(&game_lib);
