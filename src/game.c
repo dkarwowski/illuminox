@@ -40,8 +40,30 @@ UPDATE(Update) /* memory, input */
         }
     }
 
-    if (C_IsToggled(&input->console))
+    if (C_IsPressed(&input->quit)) {
+        TTF_CloseFont(state->font);
+        state->font = NULL;
+        TTF_Quit();
+
+        return;
+    }
+
+    if (input->input_entered && input->input_len > 0) {
+        fprintf(stdout, "%s\n", input->input_text);
+        input->input_entered = false;
+        input->input_text[0] = '\0';
+        input->input_len = 0;
+    } else {
+        input->input_entered = false;
+    }
+
+    if (C_IsToggled(&input->console)) {
         state->console = !state->console;
+        if (state->console)
+            SDL_StartTextInput();
+        else
+            SDL_StopTextInput();
+    }
 }
 
 /**

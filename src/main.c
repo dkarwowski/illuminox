@@ -33,7 +33,27 @@ HandleEvent( SDL_Event *event,
 
                 KEY_BINDING(READ_KEY);
 #undef READ_KEY
+
+                if (event->key.keysym.sym == SDLK_BACKSPACE && new_input->input_len > 0 && is_down) {
+                    new_input->input_text[--new_input->input_len] = '\0';
+                } else if (event->key.keysym.sym == SDLK_RETURN && is_down) {
+                    new_input->input_entered = true; /* update should clear after using this
+                                                        as well as empty the input_text */
+                }
             }
+        } break;
+        case SDL_TEXTINPUT:
+        {
+            char *input = event->text.text;
+            while (*input != '\0' && new_input->input_len < 128) {
+                if (*input == '`') {
+                    input++;
+                    continue;
+                }
+
+                new_input->input_text[new_input->input_len++] = *(input++);
+            }
+            new_input->input_text[new_input->input_len] = '\0';
         } break;
         case SDL_QUIT:
         {

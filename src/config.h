@@ -8,9 +8,9 @@
     _def(SDLK_SPACE, move_down); \
     _def(SDLK_ESCAPE, quit); \
 
-#define CONFIG_PROJ_NAME "proto"
-#define CONFIG_SCRN_WIDTH  960
-#define CONFIG_SCRN_HEIGHT 560
+#define CONFIG_PROJ_NAME   "proto"
+#define CONFIG_SCRN_WIDTH  1280
+#define CONFIG_SCRN_HEIGHT 720
 
 #define MS_PER_UPDATE 2
 #define GOAL_FPS 60

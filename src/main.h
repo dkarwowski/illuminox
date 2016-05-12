@@ -54,7 +54,9 @@ struct GameInput {
     };
 
     /* Holds input for the console or whatever else involves typing...? */
+    bool input_entered;
     char input_text[128];
+    int  input_len;
 };
 
 struct GameMemory {
