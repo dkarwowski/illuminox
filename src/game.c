@@ -1,3 +1,4 @@
+#include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
 #include "main.h"
 #include "game.h"
@@ -17,15 +18,30 @@ UPDATE(Update) /* memory, input */
 
     if (!state->init) {
         state->init = true;
-        memset(&state->tiles, 0, sizeof(u8));
+        state->console = false;
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 if (j == 0 || j == 9 || i == 0 || i == 9)
                     state->tiles[i * 10 + j] = 1;
+                else
+                    state->tiles[i * 10 + j] = 0;
             }
         }
+
+        /** Initialize font as best possible, if it fails then ensure it's NULL */
+        if (TTF_Init() == -1) {
+            state->font = NULL;
+            fprintf(stderr, "Can't initialize TTF\n");
+        } else {
+            state->font = TTF_OpenFont("../res/VeraMono.ttf", 26);
+            if (state->font == NULL)
+                fprintf(stderr, "Can't open the font: %s\n", TTF_GetError());
+        }
     }
+
+    if (C_IsToggled(&input->console))
+        state->console = !state->console;
 }
 
 /**
@@ -46,18 +62,26 @@ RENDER(Render) /* memory, renderer, dt */
     SDL_SetRenderDrawColor(renderer, 125, 125, 125, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect rect = { 10, 10, 40, 40 };
+    SDL_Rect rect = { 0, 0, PIXEL_PERMETER, PIXEL_PERMETER };
     for (int i = 0; i < 10; i++) {
-        rect.x = 10;
+        rect.x = 0;
         for (int j = 0; j < 10; j++) {
             if (state->tiles[i * 10 + j])
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             else
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
             SDL_RenderFillRect(renderer, &rect);
-            rect.x += rect.w;
+            rect.x += PIXEL_PERMETER;
         }
-        rect.y += rect.h;
+        rect.y += PIXEL_PERMETER;
+    }
+
+    if (state->console) {
+        int width, height;
+        SDL_RenderGetLogicalSize(renderer, &width, &height);
+        SDL_Rect rect_console = { 20, height - 20 - height / 2, width - 40, height / 2 };
+        SDL_SetRenderDrawColor(renderer, 10, 10, 10, 255);
+        SDL_RenderFillRect(renderer, &rect_console);
     }
 
     SDL_RenderPresent(renderer);

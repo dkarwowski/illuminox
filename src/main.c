@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <dlfcn.h>
 
+#include "config.h"
 #include "main.h"
 
 static
@@ -36,6 +37,8 @@ HandleEvent( SDL_Event *event,
         } break;
         case SDL_QUIT:
         {
+            /* allow the game to do any cleanup necessary */
+            new_input->quit.was_down = true;
             return -1;
         } break;
         default:

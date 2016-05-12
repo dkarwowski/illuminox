@@ -15,23 +15,23 @@
 #define MS_PER_UPDATE 2
 #define GOAL_FPS 60
 
-typedef uint8_t     u8;
-typedef uint16_t    u16;
-typedef uint32_t    u32;
-typedef uint64_t    u64;
+typedef  uint8_t        u8;
+typedef  uint16_t       u16;
+typedef  uint32_t       u32;
+typedef  uint64_t       u64;
 
-typedef int8_t      i8;
-typedef int16_t     i16;
-typedef int32_t     i32;
-typedef int64_t     i64;
+typedef  int8_t         i8;
+typedef  int16_t        i16;
+typedef  int32_t        i32;
+typedef  int64_t        i64;
 
-typedef char        byte;
+typedef  unsigned char  byte;
 
-typedef float       r32;
-typedef double      r64;
+typedef  float          r32;
+typedef  double         r64;
 
-typedef intptr_t    iptr;
-typedef uintptr_t   uptr;
+typedef  intptr_t       iptr;
+typedef  uintptr_t      uptr;
 
 #define SDL_LOG(msg) fprintf(stderr, msg ": %s\n", SDL_GetError())
 

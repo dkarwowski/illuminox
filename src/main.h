@@ -3,12 +3,19 @@
 #include <stdint.h>
 #include "config.h"
 
+/* Consider moving this stuff out to it's own file? */
 typedef struct {
     bool was_down;
     u64  half_count;
     u64  last_read;
 } GameControl_t;
 
+/**
+ * Check if the control was toggled, and set values to ensure toggling
+ *
+ * @control : whatever the game control is being toggled
+ * @return  : true if it was just pressed again
+ */
 static inline
 bool
 C_IsToggled(GameControl_t *control)
@@ -18,6 +25,12 @@ C_IsToggled(GameControl_t *control)
     return result;
 }
 
+/**
+ * Check if a control is currently being held down
+ *
+ * @control : the control we want to check
+ * @return  : true if the button is currently depressed
+ */
 static inline
 bool
 C_IsPressed(GameControl_t *control)
@@ -41,6 +54,9 @@ struct GameInput {
             GameControl_t quit;
         };
     };
+
+    /* Holds input for the console or whatever else involves typing...? */
+    char input_text[128];
 };
 
 struct GameMemory {
@@ -59,7 +75,7 @@ typedef UPDATE(Update_t);
 typedef RENDER(Render_t);
 
 struct GameLib {
-    ino_t ino;
+    ino_t ino; /* TODO(david): this is platform specific */
 
     void *lib;
     Update_t *Update;
