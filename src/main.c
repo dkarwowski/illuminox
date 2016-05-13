@@ -9,6 +9,13 @@
 #include "config.h"
 #include "main.h"
 
+enum Event {
+    EVENT_OKAY = 0,
+    EVENT_FOCUSLOST = 1,
+    EVENT_FOCUSGAIN = 2,
+    EVENT_QUITTING = 3
+};
+
 static
 int
 HandleEvent( SDL_Event *event,
@@ -55,17 +62,31 @@ HandleEvent( SDL_Event *event,
             }
             new_input->input_text[new_input->input_len] = '\0';
         } break;
+        case SDL_WINDOWEVENT_HIDDEN:
+        case SDL_WINDOWEVENT_MINIMIZED:
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+        case SDL_WINDOWEVENT_LEAVE:
+        {
+            return EVENT_FOCUSLOST;
+        } break;
+        case SDL_WINDOWEVENT_SHOWN:
+        case SDL_WINDOWEVENT_MAXIMIZED:
+        case SDL_WINDOWEVENT_FOCUS_GAINED:
+        case SDL_WINDOWEVENT_ENTER:
+        {
+            return EVENT_FOCUSGAIN;
+        } break;
         case SDL_QUIT:
         {
             /* allow the game to do any cleanup necessary */
             new_input->quit.was_down = true;
-            return -1;
+            return EVENT_QUITTING;
         } break;
         default:
             break;
     }
 
-    return 0;
+    return EVENT_OKAY;
 }
 
 static
@@ -205,17 +226,36 @@ main( int argc,
             const u64 count_pms = count_ps / 1000;
 
             bool done = false;
+            bool is_focused = true;
+            enum Event event_result = EVENT_OKAY;
             while (!done) {
                 curr_count = SDL_GetPerformanceCounter();
                 lag += curr_count - prev_count;
                 prev_count = curr_count;
 
-                /* swap input buffers */
                 old_input = new_input;
 
                 SDL_Event event;
                 while (SDL_PollEvent(&event))
-                    done = HandleEvent(&event, &old_input, &new_input);
+                    event_result = HandleEvent(&event, &old_input, &new_input);
+
+                /* check the events so that we handle things well and lower *
+                 * our CPU usage when not in focus anyway                   */
+                if (event_result == EVENT_FOCUSLOST) {
+                    is_focused = false;
+                } else if (event_result == EVENT_FOCUSGAIN) {
+                    is_focused = true;
+                    lag = 0;
+                } else if (event_result == EVENT_QUITTING) {
+                    done = true;
+                }
+
+                /* if we're not in focus, delay, reset lag, and wait again */
+                if (!is_focused) {
+                    SDL_Delay(500);
+                    lag = 0;
+                    continue;
+                }
 
                 /* fixed time step */
                 while (lag >= MS_PER_UPDATE*count_pms) {
