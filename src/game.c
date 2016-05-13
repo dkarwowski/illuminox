@@ -4,6 +4,9 @@
 #include "main.h"
 #include "game.h"
 
+/* Compare macro to make it more legible */
+#define C_COMPARE(input_text, command) (strcmp(input_text + 2, command) == 0)
+
 /**
  * Execute a console command that was entered
  *
@@ -17,30 +20,30 @@
 void
 C_ExecuteCommand(struct GameState *state, struct GameInput *input)
 {
-    if (strcmp(input->input_text, "reload") == 0) {
+    if (C_COMPARE(input->input_text, "reload")) {
         input->reload_lib = true;
-    } else if (strcmp(input->input_text, "restart") == 0) {
+    } else if (C_COMPARE(input->input_text, "restart")) {
         input->reload_lib = true;
         state->init = false;
-    } else if (strcmp(input->input_text, "quit") == 0) {
+    } else if (C_COMPARE(input->input_text, "quit")) {
         input->quit.was_down = true;
-    } else if (strcmp(input->input_text, "clear") == 0) {
+    } else if (C_COMPARE(input->input_text, "clear")) {
         for (int i = 0; i < 10; state->buffer[i++][0] = '\0') /* that's it */;
-        input->input_text[0] = '\0';
-        input->input_len = 0;
-    } else if (strcmp(input->input_text, "") == 0) {
+        input->input_text[2] = '\0';
+        input->input_len = 2;
+    } else if (C_COMPARE(input->input_text, "")) {
         /* do nothing */
     } else { /* text entered was invalid, so say so */
-        memcpy(input->input_text, "invalid", 8);
-        input->input_len = 8;
+        memcpy(input->input_text + 2, "invalid", 8);
+        input->input_len = 10;
     }
 
-    memcpy(state->buffer[1], input->input_text, input->input_len + 1);
+    memcpy(state->buffer[1], input->input_text + 2, input->input_len - 1);
 
     /* cleanup the input text now */
     input->input_entered = false;
-    input->input_text[0] = '\0';
-    input->input_len = 0;
+    input->input_text[2] = '\0';
+    input->input_len = 2;
 }
 
 /**
