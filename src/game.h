@@ -11,6 +11,9 @@ struct GameState {
 
     bool console;
     char buffer[10][128];
+
+    /* player position */
+    r64 posx, posy;
 };
 
 #define _GAME_h_

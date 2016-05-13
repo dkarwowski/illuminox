@@ -63,6 +63,9 @@ UPDATE(Update) /* memory, input */
     if (!state->init) {
         state->init = true;
         state->console = false;
+        SDL_StopTextInput();
+        input->input_text[2] = '\0';
+        input->input_len = 2;
 
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
@@ -72,6 +75,9 @@ UPDATE(Update) /* memory, input */
                     state->tiles[i * 10 + j] = 0;
             }
         }
+
+        state->posx = 5.0f;
+        state->posy = 5.0f;
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -125,6 +131,19 @@ UPDATE(Update) /* memory, input */
      * in a sense, resume the game with those changes in place */
     if (state->console)
         return;
+
+    if (C_IsPressed(&input->move_down)) {
+        state->posy += 0.01f;
+    }
+    if (C_IsPressed(&input->move_up)) {
+        state->posy -= 0.01f;
+    }
+    if (C_IsPressed(&input->move_right)) {
+        state->posx += 0.01f;
+    }
+    if (C_IsPressed(&input->move_left)) {
+        state->posx -= 0.01f;
+    }
 }
 
 /**
@@ -158,6 +177,13 @@ RENDER(Render) /* memory, renderer, dt */
         }
         rect.y += PIXEL_PERMETER;
     }
+
+    SDL_Rect player_rect = { (int)PIXEL_PERMETER * state->posx,
+                             (int)PIXEL_PERMETER * state->posy,
+                             (int)PIXEL_PERMETER * 0.9f,
+                             (int)PIXEL_PERMETER * 1.2f };
+    SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
+    SDL_RenderFillRect(renderer, &player_rect);
 
     if (state->console && state->font != NULL) {
         int width, height;

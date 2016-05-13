@@ -5,7 +5,7 @@
     _def(SDLK_d, move_right); \
     _def(SDLK_w, move_up); \
     _def(SDLK_s, move_down); \
-    _def(SDLK_SPACE, move_down); \
+    _def(SDLK_SPACE, action); \
     _def(SDLK_ESCAPE, quit); \
 
 #define CONFIG_PROJ_NAME   "proto"

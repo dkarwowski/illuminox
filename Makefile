@@ -24,7 +24,7 @@ $(TARGET): $(BUILDDIR)/main.o
 
 $(GAME): $(OBJECTS)
 	@echo -e "\e[1;94m-> Creating libgame.so... \e[0m"
-	$(CC) $(CFLAGS) $(WFLAGS) $^ -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
+	$(CC) $^ -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@echo -e "\e[1;96m-> Creating $@...\e[0m"
