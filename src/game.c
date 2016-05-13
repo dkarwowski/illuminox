@@ -17,6 +17,7 @@
  * field. It'll work either way, just come out as empty space. Any
  * command that isn't handled is replaced with invalid.
  */
+static
 void
 C_ExecuteCommand(struct GameState *state, struct GameInput *input)
 {

@@ -6,7 +6,7 @@ typedef struct {
     bool was_down;
     u64  half_count;
     u64  last_read;
-} GameControl_t;
+} C_GameControl;
 
 /**
  * Check if the control was toggled, and set values to ensure toggling
@@ -16,7 +16,7 @@ typedef struct {
  */
 static inline
 bool
-C_IsToggled(GameControl_t *control)
+C_IsToggled(C_GameControl *control)
 {
     bool result = control->was_down && (control->last_read != control->half_count);
     control->last_read = result ? control->half_count : control->last_read;
@@ -31,25 +31,25 @@ C_IsToggled(GameControl_t *control)
  */
 static inline
 bool
-C_IsPressed(GameControl_t *control)
+C_IsPressed(C_GameControl *control)
 {
     return control->was_down;
 }
 
 struct GameInput {
     union {
-        GameControl_t control[5];
+        C_GameControl control[5];
 
         struct {
-            GameControl_t move_left;
-            GameControl_t move_right;
-            GameControl_t move_up;
-            GameControl_t move_down;
-            GameControl_t action;
+            C_GameControl move_left;
+            C_GameControl move_right;
+            C_GameControl move_up;
+            C_GameControl move_down;
+            C_GameControl action;
 
-            GameControl_t console;
+            C_GameControl console;
 
-            GameControl_t quit;
+            C_GameControl quit;
         };
     };
 
