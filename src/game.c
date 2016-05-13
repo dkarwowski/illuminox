@@ -132,18 +132,30 @@ UPDATE(Update) /* memory, input */
     if (state->console)
         return;
 
+    /* adjust the player movement */
+    float accx, accy;
+    accx = accy = 0.0f;
     if (C_IsPressed(&input->move_down)) {
-        state->posy += 0.01f;
+        accy += 1.0f;
     }
     if (C_IsPressed(&input->move_up)) {
-        state->posy -= 0.01f;
+        accy -= 1.0f;
     }
     if (C_IsPressed(&input->move_right)) {
-        state->posx += 0.01f;
+        accx += 1.0f;
     }
     if (C_IsPressed(&input->move_left)) {
-        state->posx -= 0.01f;
+        accx -= 1.0f;
     }
+    float norm = sqrt(accx * accx + accy * accy);
+    if (fabs(norm) > 0.0001f) {
+        accx /= norm;
+        accy /= norm;
+    }
+    state->velx = 0.95f * state->velx + 25.0f * 1.0f/1000.0f * MS_PER_UPDATE * accx;
+    state->vely = 0.95f * state->vely + 25.0f * 1.0f/1000.0f * MS_PER_UPDATE * accy;
+    state->posx += 1.0f/1000.0f * MS_PER_UPDATE * state->velx;
+    state->posy += 1.0f/1000.0f * MS_PER_UPDATE * state->vely;
 }
 
 /**
@@ -164,6 +176,7 @@ RENDER(Render) /* memory, renderer, dt */
     SDL_SetRenderDrawColor(renderer, 125, 125, 125, 255);
     SDL_RenderClear(renderer);
 
+    /* render the tiles */
     SDL_Rect rect = { 0, 0, PIXEL_PERMETER, PIXEL_PERMETER };
     for (int i = 0; i < 10; i++) {
         rect.x = 0;
@@ -178,12 +191,19 @@ RENDER(Render) /* memory, renderer, dt */
         rect.y += PIXEL_PERMETER;
     }
 
-    SDL_Rect player_rect = { (int)PIXEL_PERMETER * state->posx,
-                             (int)PIXEL_PERMETER * state->posy,
-                             (int)PIXEL_PERMETER * 0.9f,
-                             (int)PIXEL_PERMETER * 1.2f };
+    /* render the player */
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * state->posx),
+                             (int)(PIXEL_PERMETER * state->posy),
+                             (int)(PIXEL_PERMETER * 0.9f),
+                             (int)(PIXEL_PERMETER * 1.2f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
+
+    SDL_SetRenderDrawColor(renderer, 0, 125, 125, 255);
+    SDL_RenderDrawLine(renderer, (int)(PIXEL_PERMETER * state->posx),
+                                 (int)(PIXEL_PERMETER * state->posy),
+                                 (int)(PIXEL_PERMETER * (state->posx + 10*state->velx)),
+                                 (int)(PIXEL_PERMETER * (state->posy + 10*state->vely)));
 
     if (state->console && state->font != NULL) {
         int width, height;

@@ -14,6 +14,7 @@ struct GameState {
 
     /* player position */
     r64 posx, posy;
+    r64 velx, vely;
 };
 
 #define _GAME_h_
