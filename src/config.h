@@ -12,7 +12,9 @@
 #define CONFIG_SCRN_WIDTH  1280
 #define CONFIG_SCRN_HEIGHT 720
 
-#define MS_PER_UPDATE 2
+/* runs at 120 FPS like this */
+#define MS_PER_UPDATE 8
+#define SEC_PER_UPDATE (1.0f/1000.0f * MS_PER_UPDATE)
 #define GOAL_FPS 60
 
 /* define true and false stuff here, no stdbool */

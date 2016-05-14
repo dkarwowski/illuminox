@@ -1,11 +1,16 @@
 #include <SDL2/SDL_ttf.h>
 #include <SDL2/SDL.h>
+#include <math.h>
 
 #include "main.h"
 #include "game.h"
 
 /* Compare macro to make it more legible */
 #define C_COMPARE(input_text, command) (strcmp(input_text + 2, command) == 0)
+
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
+#define SIGN(a) ((0.0001f < a) - (a < -0.0001f))
 
 /**
  * Execute a console command that was entered
@@ -45,6 +50,20 @@ C_ExecuteCommand(struct GameState *state, struct GameInput *input)
     input->input_entered = false;
     input->input_text[2] = '\0';
     input->input_len = 2;
+}
+
+r32
+PercIntersectLineLine(r32 x0, r32 y, r32 x1, r32 finalx, r32 finaly)
+{
+    r32 epsilon = 0.001f;
+    if (finaly >= 0.00001f) {
+        r32 t = y / finaly;
+        r32 x = t * finalx;
+        if (t > 0.0f && x0 <= x && x <= x1)
+            return MAX(0, t - epsilon);
+    }
+
+    return 1.0f;
 }
 
 /**
@@ -133,7 +152,7 @@ UPDATE(Update) /* memory, input */
         return;
 
     /* adjust the player movement */
-    float accx, accy;
+    r32 accx, accy;
     accx = accy = 0.0f;
     if (C_IsPressed(&input->move_down)) {
         accy += 1.0f;
@@ -152,10 +171,59 @@ UPDATE(Update) /* memory, input */
         accx /= norm;
         accy /= norm;
     }
-    state->velx = 0.95f * state->velx + 25.0f * 1.0f/1000.0f * MS_PER_UPDATE * accx;
-    state->vely = 0.95f * state->vely + 25.0f * 1.0f/1000.0f * MS_PER_UPDATE * accy;
-    state->posx += 1.0f/1000.0f * MS_PER_UPDATE * state->velx;
-    state->posy += 1.0f/1000.0f * MS_PER_UPDATE * state->vely;
+    state->velx = 0.95f * state->velx + 25.0f * SEC_PER_UPDATE * accx;
+    state->vely = 0.95f * state->vely + 25.0f * SEC_PER_UPDATE * accy;
+
+    r32 dposx = SEC_PER_UPDATE * state->velx;
+    r32 dposy = SEC_PER_UPDATE * state->vely;
+
+    r32 newx = state->posx + dposx;
+    r32 newy = state->posy + dposy;
+
+    int min_tilex, max_tilex, min_tiley, max_tiley;
+    min_tilex = (int)MIN(newx - 0.45f, state->posx - 0.45f);
+    max_tilex = (int)MAX(newx + 0.45f, state->posx + 0.45f);
+    min_tiley = (int)MIN(newy - 0.6f,  state->posy - 0.6f);
+    max_tiley = (int)MAX(newy + 0.6f,  state->posy + 0.6f);
+
+    r32 tleft = 1.0f;
+    for (int z = 0; z < 4 && tleft > 0.0f; z++) {
+        r32 normalx = 0.0f;
+        r32 normaly = 0.0f;
+        r32 tmin = 1.0f;
+        for (int i = min_tiley; i <= max_tiley; i++) {
+            for (int j = min_tilex; j <= max_tilex; j++) {
+                if (i < 0 || i > 9 || j < 0 || j > 9) continue;
+                if (state->tiles[i * 10 + j] == 0) continue;
+                r32 points[] = { (r32)j - 0.45f - state->posx,
+                                 (r32)i - 0.6f  - state->posy,
+                                 (r32)j + 1.45f - state->posx,
+                                 (r32)i + 1.6f  - state->posy};
+                if (points[0] < dposx && dposx < points[2])
+                    normalx = 1;
+                if (points[1] < dposy && dposy < points[3])
+                    normaly = 1;
+
+                /* create all of the possible ts given the rect
+                 *   _1_
+                 * 4 |_| 2
+                 *    3
+                 */
+                r32 t1 = PercIntersectLineLine(points[0], points[1], points[2], dposx, dposy);
+                r32 t2 = PercIntersectLineLine(points[1], points[2], points[3], dposx, dposx);
+                r32 t3 = PercIntersectLineLine(points[0], points[3], points[2], dposx, dposy);
+                r32 t4 = PercIntersectLineLine(points[1], points[0], points[3], dposx, dposx);
+                tmin = MIN(tmin, MIN(t1, MIN(t2, MIN(t3, t4))));
+            }
+        }
+        state->posx += dposx * tmin;
+        state->posy += dposy * tmin;
+        dposx -= dposx*normalx;
+        dposy -= dposy*normaly;
+        state->velx -= state->velx*normalx;
+        state->vely -= state->vely*normaly;
+        tleft -= tmin * tleft;
+    }
 }
 
 /**
@@ -192,8 +260,8 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     /* render the player */
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * state->posx),
-                             (int)(PIXEL_PERMETER * state->posy),
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->posx - 0.45f)),
+                             (int)(PIXEL_PERMETER * (state->posy - 0.6f)),
                              (int)(PIXEL_PERMETER * 0.9f),
                              (int)(PIXEL_PERMETER * 1.2f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
