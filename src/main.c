@@ -272,7 +272,7 @@ main( int argc,
 
                 /* render, ensure we can update by a fraction of update interval */
                 if (game_lib.Render)
-                    game_lib.Render(&memory, renderer, (r64)(lag)/(r64)(count_pms));
+                    game_lib.Render(&memory, renderer, (r64)(lag)/(1000.0f * (r64)(count_pms)));
 
                 if (new_input.quit.was_down)
                     done = true;

@@ -8,8 +8,9 @@ GAME := libgame
 SRCEXT := c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
-CFLAGS := -fPIC $(shell sdl2-config --cflags) -D_THREAD_SAFE
-WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -O2 -DDEBUG -g
+OPTIM  :=
+CFLAGS := -fPIC $(shell sdl2-config --cflags) -D_THREAD_SAFE $(OPTIM)
+WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -DDEBUG -g
 LIBS = -ldl -lm $(shell sdl2-config --libs) -lSDL2_ttf
 
 default: $(GAME)
@@ -20,11 +21,11 @@ all: $(TARGET) $(GAME)
 
 $(TARGET): $(BUILDDIR)/main.o
 	@echo -e "\e[1;94m-> Creating main... \e[0m"
-	$(CC) $^ -o $(TARGETDIR)/$(TARGET) $(LIBS)
+	$(CC) $^ $(OPTIM) -o $(TARGETDIR)/$(TARGET) $(LIBS)
 
 $(GAME): $(OBJECTS)
 	@echo -e "\e[1;94m-> Creating libgame.so... \e[0m"
-	$(CC) $^ -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
+	$(CC) $^ $(OPTIM) -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
 	@echo -e "\e[1;96m-> Creating $@...\e[0m"

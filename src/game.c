@@ -53,17 +53,19 @@ C_ExecuteCommand(struct GameState *state, struct GameInput *input)
 }
 
 r32
-PercIntersectLineLine(r32 x0, r32 y, r32 x1, r32 finalx, r32 finaly)
+DidCrossWall(r32 x0, r32 y, r32 x1, r32 finalx, r32 finaly, r32 *tmin)
 {
     r32 epsilon = 0.001f;
-    if (finaly >= 0.00001f) {
+    if (finaly != 0.0f && finaly != -0.0f) {
         r32 t = y / finaly;
         r32 x = t * finalx;
-        if (t > 0.0f && x0 <= x && x <= x1)
-            return MAX(0, t - epsilon);
+        if (t > 0.0f && x0 < x && x < x1 && *tmin > t) {
+            *tmin = MAX(0.0f, t - epsilon);
+            return true;
+        }
     }
 
-    return 1.0f;
+    return false;
 }
 
 /**
@@ -195,25 +197,31 @@ UPDATE(Update) /* memory, input */
             for (int j = min_tilex; j <= max_tilex; j++) {
                 if (i < 0 || i > 9 || j < 0 || j > 9) continue;
                 if (state->tiles[i * 10 + j] == 0) continue;
-                r32 points[] = { (r32)j - 0.45f - state->posx,
-                                 (r32)i - 0.6f  - state->posy,
-                                 (r32)j + 1.45f - state->posx,
-                                 (r32)i + 1.6f  - state->posy};
-                if (points[0] < dposx && dposx < points[2])
-                    normalx = 1;
-                if (points[1] < dposy && dposy < points[3])
-                    normaly = 1;
+                r32 points[] = { (r32)j - 0.4499f - state->posx,
+                                 (r32)i - 0.5999f - state->posy,
+                                 (r32)j + 1.4499f - state->posx,
+                                 (r32)i + 1.5999f - state->posy };
 
-                /* create all of the possible ts given the rect
-                 *   _1_
-                 * 4 |_| 2
-                 *    3
-                 */
-                r32 t1 = PercIntersectLineLine(points[0], points[1], points[2], dposx, dposy);
-                r32 t2 = PercIntersectLineLine(points[1], points[2], points[3], dposx, dposx);
-                r32 t3 = PercIntersectLineLine(points[0], points[3], points[2], dposx, dposy);
-                r32 t4 = PercIntersectLineLine(points[1], points[0], points[3], dposx, dposx);
-                tmin = MIN(tmin, MIN(t1, MIN(t2, MIN(t3, t4))));
+                /* check right of collision */
+                if (DidCrossWall(points[1], points[0], points[3], dposy, dposx, &tmin)){
+                    normalx = 1.0f;
+                    normaly = 0.0f;
+                }
+                /* check top of collision */
+                if (DidCrossWall(points[0], points[1], points[2], dposx, dposy, &tmin)) {
+                    normalx = 0.0f;
+                    normaly = 1.0f;
+                }
+                /* check bottom of collision */
+                if (DidCrossWall(points[0], points[3], points[2], dposx, dposy, &tmin)){
+                    normalx = 0.0f;
+                    normaly = 1.0f;
+                }
+                /* check left of collision */
+                if (DidCrossWall(points[1], points[2], points[3], dposy, dposx, &tmin)){
+                    normalx = 1.0f;
+                    normaly = 0.0f;
+                }
             }
         }
         state->posx += dposx * tmin;
@@ -222,7 +230,7 @@ UPDATE(Update) /* memory, input */
         dposy -= dposy*normaly;
         state->velx -= state->velx*normalx;
         state->vely -= state->vely*normaly;
-        tleft -= tmin * tleft;
+        tleft -= tmin;
     }
 }
 
@@ -260,8 +268,8 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     /* render the player */
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->posx - 0.45f)),
-                             (int)(PIXEL_PERMETER * (state->posy - 0.6f)),
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->posx + state->velx * dt - 0.45f)),
+                             (int)(PIXEL_PERMETER * (state->posy + state->vely * dt - 0.6f)),
                              (int)(PIXEL_PERMETER * 0.9f),
                              (int)(PIXEL_PERMETER * 1.2f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
@@ -270,8 +278,8 @@ RENDER(Render) /* memory, renderer, dt */
     SDL_SetRenderDrawColor(renderer, 0, 125, 125, 255);
     SDL_RenderDrawLine(renderer, (int)(PIXEL_PERMETER * state->posx),
                                  (int)(PIXEL_PERMETER * state->posy),
-                                 (int)(PIXEL_PERMETER * (state->posx + 10*state->velx)),
-                                 (int)(PIXEL_PERMETER * (state->posy + 10*state->vely)));
+                                 (int)(PIXEL_PERMETER * (state->posx + state->velx)),
+                                 (int)(PIXEL_PERMETER * (state->posy + state->vely)));
 
     if (state->console && state->font != NULL) {
         int width, height;
