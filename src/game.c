@@ -52,22 +52,6 @@ C_ExecuteCommand(struct GameState *state, struct GameInput *input)
     input->input_len = 2;
 }
 
-r32
-DidCrossWall(r32 x0, r32 y, r32 x1, r32 finalx, r32 finaly, r32 *tmin)
-{
-    r32 epsilon = 0.001f;
-    if (finaly != 0.0f && finaly != -0.0f) {
-        r32 t = y / finaly;
-        r32 x = t * finalx;
-        if (t > 0.0f && x0 < x && x < x1 && *tmin > t) {
-            *tmin = MAX(0.0f, t - epsilon);
-            return true;
-        }
-    }
-
-    return false;
-}
-
 /**
  * Update the game state and objects
  * @memory : the memory we keep constant
@@ -196,26 +180,24 @@ UPDATE(Update) /* memory, input */
                                  (r32)i - 0.5999f - state->pos.y,
                                  (r32)j + 1.4499f - state->pos.x,
                                  (r32)i + 1.5999f - state->pos.y };
+                struct {
+                    r32 x0, x1, y, dy, dx;
+                    struct Vec2 normal;
+                } walls[] = {{ points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
+                             { points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
+                             { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
+                             { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
 
-                /* check right of collision */
-                if (DidCrossWall(points[1], points[0], points[3], dpos.y, dpos.x, &tmin)){
-                    normal.x = 1.0f;
-                    normal.y = 0.0f;
-                }
-                /* check top of collision */
-                if (DidCrossWall(points[0], points[1], points[2], dpos.x, dpos.y, &tmin)) {
-                    normal.x = 0.0f;
-                    normal.y = -1.0f;
-                }
-                /* check bottom of collision */
-                if (DidCrossWall(points[0], points[3], points[2], dpos.x, dpos.y, &tmin)){
-                    normal.x = 0.0f;
-                    normal.y = 1.0f;
-                }
-                /* check left of collision */
-                if (DidCrossWall(points[1], points[2], points[3], dpos.y, dpos.x, &tmin)){
-                    normal.x = -1.0f;
-                    normal.y = 0.0f;
+                for (int walli = 0; walli < 4; walli++) {
+                    r32 epsilon = 0.001f;
+                    if (fabsf(walls[walli].dy) > 0.001f) {
+                        r32 t = walls[walli].y / walls[walli].dy;
+                        r32 x = t * walls[walli].dx;
+                        if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
+                            tmin = MAX(0.0f, t - epsilon);
+                            normal = walls[walli].normal;
+                        }
+                    }
                 }
             }
         }
