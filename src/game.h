@@ -16,6 +16,7 @@ struct GameState {
     /* player position */
     struct Vec2 pos;
     struct Vec2 vel;
+    struct Vec2 rad;
 };
 
 #define _GAME_h_

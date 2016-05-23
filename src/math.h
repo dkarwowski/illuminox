@@ -5,6 +5,9 @@ struct Vec2 {
         struct {
             r32 x, y;
         };
+        struct {
+            r32 w, h;
+        };
         r32 e[2];
     };
 };

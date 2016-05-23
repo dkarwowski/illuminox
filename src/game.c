@@ -83,6 +83,7 @@ UPDATE(Update) /* memory, input */
 
         state->pos = (struct Vec2){ 5.0f, 5.0f };
         state->vel = (struct Vec2){ 0.0f, 0.0f };
+        state->rad = (struct Vec2){ 0.45f, 0.6f };
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -163,10 +164,10 @@ UPDATE(Update) /* memory, input */
     struct Vec2 npos = V2_Add(state->pos, dpos);
 
     int min_tilex, max_tilex, min_tiley, max_tiley;
-    min_tilex = (int)MIN(npos.x - 0.45f, state->pos.x - 0.45f);
-    max_tilex = (int)MAX(npos.x + 0.45f, state->pos.x + 0.45f);
-    min_tiley = (int)MIN(npos.y - 0.6f,  state->pos.y - 0.6f);
-    max_tiley = (int)MAX(npos.y + 0.6f,  state->pos.y + 0.6f);
+    min_tilex = (int)MIN(npos.x - state->rad.w, state->pos.x - state->rad.w);
+    max_tilex = (int)MAX(npos.x + state->rad.w, state->pos.x + state->rad.w);
+    min_tiley = (int)MIN(npos.y - state->rad.h, state->pos.y - state->rad.h);
+    max_tiley = (int)MAX(npos.y + state->rad.h, state->pos.y + state->rad.h);
 
     r32 tleft = 1.0f;
     for (int z = 0; z < 4 && tleft > 0.0f; z++) {
@@ -176,10 +177,10 @@ UPDATE(Update) /* memory, input */
             for (int j = min_tilex; j <= max_tilex; j++) {
                 if (i < 0 || i > 9 || j < 0 || j > 9) continue;
                 if (state->tiles[i * 10 + j] == 0) continue;
-                r32 points[] = { (r32)j - 0.4499f - state->pos.x,
-                                 (r32)i - 0.5999f - state->pos.y,
-                                 (r32)j + 1.4499f - state->pos.x,
-                                 (r32)i + 1.5999f - state->pos.y };
+                r32 points[] = { (r32)j - state->rad.w + 0.001f - state->pos.x, /* add epsilon to ensure closer */
+                                 (r32)i - state->rad.h + 0.001f - state->pos.y, /* hits that look cleaner */
+                                 (r32)j + state->rad.w + 1.0f   - state->pos.x,
+                                 (r32)i + state->rad.h + 1.0f   - state->pos.y };
                 struct {
                     r32 x0, x1, y, dy, dx;
                     struct Vec2 normal;
@@ -242,10 +243,10 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     /* render the player */
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->pos.x + state->vel.x * dt - 0.45f)),
-                             (int)(PIXEL_PERMETER * (state->pos.y + state->vel.y * dt - 0.6f)),
-                             (int)(PIXEL_PERMETER * 0.9f),
-                             (int)(PIXEL_PERMETER * 1.2f) };
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->pos.x + state->vel.x * dt - state->rad.w)),
+                             (int)(PIXEL_PERMETER * (state->pos.y + state->vel.y * dt - state->rad.h)),
+                             (int)(PIXEL_PERMETER * state->rad.w * 2),
+                             (int)(PIXEL_PERMETER * state->rad.h * 2) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 
