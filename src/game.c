@@ -97,8 +97,8 @@ UPDATE(Update) /* memory, input */
             }
         }
 
-        state->posx = 5.0f;
-        state->posy = 5.0f;
+        state->pos = (struct Vec2){ 5.0f, 5.0f };
+        state->vel = (struct Vec2){ 0.0f, 0.0f };
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -154,82 +154,74 @@ UPDATE(Update) /* memory, input */
         return;
 
     /* adjust the player movement */
-    r32 accx, accy;
-    accx = accy = 0.0f;
+    struct Vec2 acc = { 0.0f, 0.0f };
     if (C_IsPressed(&input->move_down)) {
-        accy += 1.0f;
+        acc.y += 1.0f;
     }
     if (C_IsPressed(&input->move_up)) {
-        accy -= 1.0f;
+        acc.y -= 1.0f;
     }
     if (C_IsPressed(&input->move_right)) {
-        accx += 1.0f;
+        acc.x += 1.0f;
     }
     if (C_IsPressed(&input->move_left)) {
-        accx -= 1.0f;
+        acc.x -= 1.0f;
     }
-    float norm = sqrt(accx * accx + accy * accy);
-    if (fabs(norm) > 0.0001f) {
-        accx /= norm;
-        accy /= norm;
-    }
-    state->velx = 0.95f * state->velx + 25.0f * SEC_PER_UPDATE * accx;
-    state->vely = 0.95f * state->vely + 25.0f * SEC_PER_UPDATE * accy;
+    acc = V2_Mul(25.0f, V2_Norm(acc));
+    state->vel = V2_Add(V2_Mul(0.95f, state->vel), V2_Mul(SEC_PER_UPDATE, acc));
 
-    r32 dposx = SEC_PER_UPDATE * state->velx;
-    r32 dposy = SEC_PER_UPDATE * state->vely;
+    /*
+    struct Vec2 dpos = V2_Add(V2_Mul((r32)(SEC_PER_UPDATE*SEC_PER_UPDATE)/2.0f, acc),
+                              V2_Mul(SEC_PER_UPDATE, state->vel));
+                              */
+    struct Vec2 dpos = V2_Mul(SEC_PER_UPDATE, state->vel);
 
-    r32 newx = state->posx + dposx;
-    r32 newy = state->posy + dposy;
+    struct Vec2 npos = V2_Add(state->pos, dpos);
 
     int min_tilex, max_tilex, min_tiley, max_tiley;
-    min_tilex = (int)MIN(newx - 0.45f, state->posx - 0.45f);
-    max_tilex = (int)MAX(newx + 0.45f, state->posx + 0.45f);
-    min_tiley = (int)MIN(newy - 0.6f,  state->posy - 0.6f);
-    max_tiley = (int)MAX(newy + 0.6f,  state->posy + 0.6f);
+    min_tilex = (int)MIN(npos.x - 0.45f, state->pos.x - 0.45f);
+    max_tilex = (int)MAX(npos.x + 0.45f, state->pos.x + 0.45f);
+    min_tiley = (int)MIN(npos.y - 0.6f,  state->pos.y - 0.6f);
+    max_tiley = (int)MAX(npos.y + 0.6f,  state->pos.y + 0.6f);
 
     r32 tleft = 1.0f;
     for (int z = 0; z < 4 && tleft > 0.0f; z++) {
-        r32 normalx = 0.0f;
-        r32 normaly = 0.0f;
+        struct Vec2 normal = {0.0f, 0.0f};
         r32 tmin = 1.0f;
         for (int i = min_tiley; i <= max_tiley; i++) {
             for (int j = min_tilex; j <= max_tilex; j++) {
                 if (i < 0 || i > 9 || j < 0 || j > 9) continue;
                 if (state->tiles[i * 10 + j] == 0) continue;
-                r32 points[] = { (r32)j - 0.4499f - state->posx,
-                                 (r32)i - 0.5999f - state->posy,
-                                 (r32)j + 1.4499f - state->posx,
-                                 (r32)i + 1.5999f - state->posy };
+                r32 points[] = { (r32)j - 0.4499f - state->pos.x,
+                                 (r32)i - 0.5999f - state->pos.y,
+                                 (r32)j + 1.4499f - state->pos.x,
+                                 (r32)i + 1.5999f - state->pos.y };
 
                 /* check right of collision */
-                if (DidCrossWall(points[1], points[0], points[3], dposy, dposx, &tmin)){
-                    normalx = 1.0f;
-                    normaly = 0.0f;
+                if (DidCrossWall(points[1], points[0], points[3], dpos.y, dpos.x, &tmin)){
+                    normal.x = 1.0f;
+                    normal.y = 0.0f;
                 }
                 /* check top of collision */
-                if (DidCrossWall(points[0], points[1], points[2], dposx, dposy, &tmin)) {
-                    normalx = 0.0f;
-                    normaly = 1.0f;
+                if (DidCrossWall(points[0], points[1], points[2], dpos.x, dpos.y, &tmin)) {
+                    normal.x = 0.0f;
+                    normal.y = -1.0f;
                 }
                 /* check bottom of collision */
-                if (DidCrossWall(points[0], points[3], points[2], dposx, dposy, &tmin)){
-                    normalx = 0.0f;
-                    normaly = 1.0f;
+                if (DidCrossWall(points[0], points[3], points[2], dpos.x, dpos.y, &tmin)){
+                    normal.x = 0.0f;
+                    normal.y = 1.0f;
                 }
                 /* check left of collision */
-                if (DidCrossWall(points[1], points[2], points[3], dposy, dposx, &tmin)){
-                    normalx = 1.0f;
-                    normaly = 0.0f;
+                if (DidCrossWall(points[1], points[2], points[3], dpos.y, dpos.x, &tmin)){
+                    normal.x = -1.0f;
+                    normal.y = 0.0f;
                 }
             }
         }
-        state->posx += dposx * tmin;
-        state->posy += dposy * tmin;
-        dposx -= dposx*normalx;
-        dposy -= dposy*normaly;
-        state->velx -= state->velx*normalx;
-        state->vely -= state->vely*normaly;
+        state->pos = V2_Add(state->pos, V2_Mul(tmin, dpos));
+        state->vel = V2_Sub(state->vel, V2_Mul(V2_Dot(state->vel, normal), normal));
+        dpos = V2_Sub(dpos, V2_Mul(V2_Dot(dpos, normal), normal));
         tleft -= tmin;
     }
 }
@@ -268,18 +260,18 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     /* render the player */
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->posx + state->velx * dt - 0.45f)),
-                             (int)(PIXEL_PERMETER * (state->posy + state->vely * dt - 0.6f)),
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->pos.x + state->vel.x * dt - 0.45f)),
+                             (int)(PIXEL_PERMETER * (state->pos.y + state->vel.y * dt - 0.6f)),
                              (int)(PIXEL_PERMETER * 0.9f),
                              (int)(PIXEL_PERMETER * 1.2f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 
     SDL_SetRenderDrawColor(renderer, 0, 125, 125, 255);
-    SDL_RenderDrawLine(renderer, (int)(PIXEL_PERMETER * state->posx),
-                                 (int)(PIXEL_PERMETER * state->posy),
-                                 (int)(PIXEL_PERMETER * (state->posx + state->velx)),
-                                 (int)(PIXEL_PERMETER * (state->posy + state->vely)));
+    SDL_RenderDrawLine(renderer, (int)(PIXEL_PERMETER * state->pos.x),
+                                 (int)(PIXEL_PERMETER * state->pos.y),
+                                 (int)(PIXEL_PERMETER * (state->pos.x + state->vel.x)),
+                                 (int)(PIXEL_PERMETER * (state->pos.y + state->vel.y)));
 
     if (state->console && state->font != NULL) {
         int width, height;
