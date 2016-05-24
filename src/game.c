@@ -72,15 +72,21 @@ UPDATE(Update) /* memory, input */
         input->input_text[2] = '\0';
         input->input_len = 2;
 
+        struct WorldChunk *chunk = &state->world.chunks[0];
+        chunk->x = 0;
+        chunk->y = 0;
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 if (j == 0 || j == 9 || i == 0 || i == 9)
-                    state->tiles[i * 10 + j] = 1;
+                    chunk->tiles[i * 10 + j] = 1;
                 else
-                    state->tiles[i * 10 + j] = 0;
+                    chunk->tiles[i * 10 + j] = 0;
             }
         }
+        chunk->next = NULL;
 
+        state->worldx = 0;
+        state->worldy = 0;
         state->pos = (struct Vec2){ 5.0f, 5.0f };
         state->vel = (struct Vec2){ 0.0f, 0.0f };
         state->rad = (struct Vec2){ 0.45f, 0.6f };
@@ -153,14 +159,10 @@ UPDATE(Update) /* memory, input */
         acc.x -= 1.0f;
     }
     acc = V2_Mul(25.0f, V2_Norm(acc));
+
     state->vel = V2_Add(V2_Mul(0.95f, state->vel), V2_Mul(SEC_PER_UPDATE, acc));
 
-    /*
-    struct Vec2 dpos = V2_Add(V2_Mul((r32)(SEC_PER_UPDATE*SEC_PER_UPDATE)/2.0f, acc),
-                              V2_Mul(SEC_PER_UPDATE, state->vel));
-                              */
     struct Vec2 dpos = V2_Mul(SEC_PER_UPDATE, state->vel);
-
     struct Vec2 npos = V2_Add(state->pos, dpos);
 
     int min_tilex, max_tilex, min_tiley, max_tiley;
@@ -176,7 +178,7 @@ UPDATE(Update) /* memory, input */
         for (int i = min_tiley; i <= max_tiley; i++) {
             for (int j = min_tilex; j <= max_tilex; j++) {
                 if (i < 0 || i > 9 || j < 0 || j > 9) continue;
-                if (state->tiles[i * 10 + j] == 0) continue;
+                if (state->world.chunks[0].tiles[i * 10 + j] == 0) continue;
                 r32 points[] = { (r32)j - state->rad.w + 0.001f - state->pos.x, /* add epsilon to ensure closer */
                                  (r32)i - state->rad.h + 0.001f - state->pos.y, /* hits that look cleaner */
                                  (r32)j + state->rad.w + 1.0f   - state->pos.x,
@@ -232,7 +234,7 @@ RENDER(Render) /* memory, renderer, dt */
     for (int i = 0; i < 10; i++) {
         rect.x = 0;
         for (int j = 0; j < 10; j++) {
-            if (state->tiles[i * 10 + j])
+            if (state->world.chunks[0].tiles[i * 10 + j])
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             else
                 SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);

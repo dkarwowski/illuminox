@@ -3,10 +3,20 @@
 
 #define PIXEL_PERMETER 100
 
+struct WorldChunk {
+    u32 x, y;
+    u8 tiles[100];
+    struct WorldChunk *next;
+};
+
+struct WorldState {
+    struct WorldChunk chunks[2048];
+};
+
 struct GameState {
     bool init;
 
-    u8 tiles[100];
+    struct WorldState world;
 
     TTF_Font *font;
 
@@ -14,6 +24,7 @@ struct GameState {
     char buffer[10][128];
 
     /* player position */
+    u32 worldx, worldy;
     struct Vec2 pos;
     struct Vec2 vel;
     struct Vec2 rad;
