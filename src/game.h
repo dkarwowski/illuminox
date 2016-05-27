@@ -3,6 +3,13 @@
 
 #define PIXEL_PERMETER 100
 
+struct Entity {
+    u32 worldx, worldy;
+    struct Vec2 pos;
+    struct Vec2 vel;
+    struct Vec2 rad;
+};
+
 struct WorldChunk {
     u32 x, y;
     u8 tiles[100];
@@ -23,11 +30,8 @@ struct GameState {
     bool console;
     char buffer[10][128];
 
-    /* player position */
-    u32 worldx, worldy;
-    struct Vec2 pos;
-    struct Vec2 vel;
-    struct Vec2 rad;
+    /* player */
+    struct Entity player;
 };
 
 #define _GAME_h_

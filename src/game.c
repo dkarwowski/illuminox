@@ -52,6 +52,66 @@ I_ExecuteCommand(struct GameState *state, struct GameInput *input)
     input->input_len = 2;
 }
 
+void
+Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
+{
+    ent->vel = V2_Add(V2_Mul(0.95f, ent->vel), V2_Mul(SEC_PER_UPDATE, acc));
+
+    /* don't set the position until after we check collisions */
+    struct Vec2 dpos = V2_Mul(SEC_PER_UPDATE, ent->vel);
+    struct Vec2 npos = V2_Add(ent->pos, dpos);
+
+    int min_tilex, max_tilex, min_tiley, max_tiley;
+    min_tilex = (int)MIN(npos.x - ent->rad.w, ent->pos.x - ent->rad.w);
+    min_tiley = (int)MIN(npos.y - ent->rad.h, ent->pos.y - ent->rad.h);
+    max_tilex = (int)MAX(npos.x + ent->rad.w, ent->pos.x + ent->rad.w);
+    max_tiley = (int)MAX(npos.y + ent->rad.h, ent->pos.y + ent->rad.h);
+
+    /* actual collision detection and handling */
+    r32 tleft = 1.0f;
+    for (int z = 0; z < 4 && tleft > 0.0f; z++) {
+        struct Vec2 normal = {0.0f, 0.0f};
+        r32 tmin = 1.0f;
+        for (int i = min_tiley; i <= max_tiley; i++) {
+            for (int j = min_tilex; j <= max_tilex; j++) {
+                if (i < 0 || i > 9 || j < 0 || j > 9) continue;
+                if (world->chunks[0].tiles[i * 10 + j] == 0) continue;
+                /* points with small epsilon for flush collision */
+                r32 points[] = { (r32)j - ent->rad.w + 0.001f - ent->pos.x,
+                                 (r32)i - ent->rad.h + 0.001f - ent->pos.y,
+                                 (r32)j + ent->rad.w + 1.0f   - ent->pos.x,
+                                 (r32)i + ent->rad.h + 1.0f   - ent->pos.y };
+                /* loop over walls defined in this way (top, bottom, left, right) */
+                struct {
+                    r32 x0, x1, y, dy, dx;
+                    struct Vec2 normal;
+                } walls[] = {{ points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
+                             { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
+                             { points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
+                             { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
+
+                for (int walli = 0; walli < 4; walli++) {
+                    r32 epsilon = 0.001f;
+                    if (fabsf(walls[walli].dy) > 0.001f) {
+                        r32 t = walls[walli].y / walls[walli].dy;
+                        r32 x = t * walls[walli].dx;
+                        if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
+                            tmin = MAX(0.0f, t - epsilon);
+                            normal = walls[walli].normal;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* adjust old pos with some sort of normal */
+        ent->pos = V2_Add(ent->pos, V2_Mul(tmin, dpos));
+        ent->vel = V2_Sub(ent->vel, V2_Mul(V2_Dot(ent->vel, normal), normal));
+        dpos = V2_Sub(dpos, V2_Mul(V2_Dot(dpos, normal), normal));
+        tleft -= tmin;
+    }
+}
+
 /**
  * Update the game state and objects
  * @memory : the memory we keep constant
@@ -85,11 +145,11 @@ UPDATE(Update) /* memory, input */
         }
         chunk->next = NULL;
 
-        state->worldx = 0;
-        state->worldy = 0;
-        state->pos = (struct Vec2){ 5.0f, 5.0f };
-        state->vel = (struct Vec2){ 0.0f, 0.0f };
-        state->rad = (struct Vec2){ 0.45f, 0.6f };
+        state->player.worldx = 0;
+        state->player.worldy = 0;
+        state->player.pos = (struct Vec2){ 5.0f, 5.0f };
+        state->player.vel = (struct Vec2){ 0.0f, 0.0f };
+        state->player.rad = (struct Vec2){ 0.45f, 0.6f };
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -144,6 +204,7 @@ UPDATE(Update) /* memory, input */
     if (state->console)
         return;
 
+    /* Handle player ------------------------------------------------------ */
     /* adjust the player movement */
     struct Vec2 acc = { 0.0f, 0.0f };
     if (I_IsPressed(&input->move_down)) {
@@ -160,61 +221,7 @@ UPDATE(Update) /* memory, input */
     }
     acc = V2_Mul(25.0f, V2_Norm(acc));
 
-    state->vel = V2_Add(V2_Mul(0.95f, state->vel), V2_Mul(SEC_PER_UPDATE, acc));
-
-    /* don't set the position until after we check collisions */
-    struct Vec2 dpos = V2_Mul(SEC_PER_UPDATE, state->vel);
-    struct Vec2 npos = V2_Add(state->pos, dpos);
-
-    int min_tilex, max_tilex, min_tiley, max_tiley;
-    min_tilex = (int)MIN(npos.x - state->rad.w, state->pos.x - state->rad.w);
-    min_tiley = (int)MIN(npos.y - state->rad.h, state->pos.y - state->rad.h);
-    max_tilex = (int)MAX(npos.x + state->rad.w, state->pos.x + state->rad.w);
-    max_tiley = (int)MAX(npos.y + state->rad.h, state->pos.y + state->rad.h);
-
-    /* actual collision detection and handling */
-    r32 tleft = 1.0f;
-    for (int z = 0; z < 4 && tleft > 0.0f; z++) {
-        struct Vec2 normal = {0.0f, 0.0f};
-        r32 tmin = 1.0f;
-        for (int i = min_tiley; i <= max_tiley; i++) {
-            for (int j = min_tilex; j <= max_tilex; j++) {
-                if (i < 0 || i > 9 || j < 0 || j > 9) continue;
-                if (state->world.chunks[0].tiles[i * 10 + j] == 0) continue;
-                /* points with small epsilon for flush collision */
-                r32 points[] = { (r32)j - state->rad.w + 0.001f - state->pos.x,
-                                 (r32)i - state->rad.h + 0.001f - state->pos.y,
-                                 (r32)j + state->rad.w + 1.0f   - state->pos.x,
-                                 (r32)i + state->rad.h + 1.0f   - state->pos.y };
-                /* loop over walls defined in this way (top, bottom, left, right) */
-                struct {
-                    r32 x0, x1, y, dy, dx;
-                    struct Vec2 normal;
-                } walls[] = {{ points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
-                             { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
-                             { points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
-                             { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
-
-                for (int walli = 0; walli < 4; walli++) {
-                    r32 epsilon = 0.001f;
-                    if (fabsf(walls[walli].dy) > 0.001f) {
-                        r32 t = walls[walli].y / walls[walli].dy;
-                        r32 x = t * walls[walli].dx;
-                        if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
-                            tmin = MAX(0.0f, t - epsilon);
-                            normal = walls[walli].normal;
-                        }
-                    }
-                }
-            }
-        }
-
-        /* adjust old pos with some sort of normal */
-        state->pos = V2_Add(state->pos, V2_Mul(tmin, dpos));
-        state->vel = V2_Sub(state->vel, V2_Mul(V2_Dot(state->vel, normal), normal));
-        dpos = V2_Sub(dpos, V2_Mul(V2_Dot(dpos, normal), normal));
-        tleft -= tmin;
-    }
+    Move(&state->world, &state->player, acc);
 }
 
 /**
@@ -251,10 +258,11 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     /* render the player */
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (state->pos.x + state->vel.x * dt - state->rad.w)),
-                             (int)(PIXEL_PERMETER * (state->pos.y + state->vel.y * dt - state->rad.h)),
-                             (int)(PIXEL_PERMETER * state->rad.w * 2),
-                             (int)(PIXEL_PERMETER * state->rad.h * 2) };
+    struct Entity *ent = &state->player;
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (ent->pos.x + ent->vel.x * dt - ent->rad.w)),
+                             (int)(PIXEL_PERMETER * (ent->pos.y + ent->vel.y * dt - ent->rad.h)),
+                             (int)(PIXEL_PERMETER * ent->rad.w * 2),
+                             (int)(PIXEL_PERMETER * ent->rad.h * 2) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 
