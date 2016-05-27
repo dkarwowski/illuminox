@@ -40,13 +40,12 @@ HandleEvent( SDL_Event *event,
 
                 KEY_BINDING(READ_KEY);
 #undef READ_KEY
-
-                if (event->key.keysym.sym == SDLK_BACKSPACE && new_input->input_len > 2 && is_down) {
-                    new_input->input_text[--new_input->input_len] = '\0';
-                } else if (event->key.keysym.sym == SDLK_RETURN && is_down) {
-                    new_input->input_entered = true; /* update should clear after using this
-                                                        as well as empty the input_text */
+                if (event->key.keysym.sym == SDLK_RETURN && is_down) {
+                    new_input->input_entered = true; /* manually needs to be cleared */
                 }
+            }
+            if (event->key.keysym.sym == SDLK_BACKSPACE && new_input->input_len > 2 && is_down) {
+                new_input->input_text[--new_input->input_len] = '\0';
             }
         } break;
         case SDL_TEXTINPUT:
@@ -213,7 +212,7 @@ main( int argc,
             /* we want double renderer for better drawing */
             int scrn_w, scrn_h;
             SDL_GetWindowSize(window, &scrn_w, &scrn_h);
-            SDL_RenderSetLogicalSize(renderer, scrn_w * 2, scrn_h * 2);
+            SDL_RenderSetLogicalSize(renderer, scrn_w, scrn_h);
 
             struct GameLib game_lib  = { 0 };
             LoadGame(&game_lib);

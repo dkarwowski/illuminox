@@ -1,7 +1,7 @@
 #ifndef _GAME_h_
 #include "math.h"
 
-#define PIXEL_PERMETER 100
+#define PIXEL_PERMETER 32
 
 struct Entity {
     u32 worldx, worldy;

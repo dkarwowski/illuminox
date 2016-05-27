@@ -77,10 +77,10 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
                 if (i < 0 || i > 9 || j < 0 || j > 9) continue;
                 if (world->chunks[0].tiles[i * 10 + j] == 0) continue;
                 /* points with small epsilon for flush collision */
-                r32 points[] = { (r32)j - ent->rad.w + 0.001f - ent->pos.x,
-                                 (r32)i - ent->rad.h + 0.001f - ent->pos.y,
-                                 (r32)j + ent->rad.w + 1.0f   - ent->pos.x,
-                                 (r32)i + ent->rad.h + 1.0f   - ent->pos.y };
+                r32 points[] = { (r32)j - ent->rad.w        - ent->pos.x,
+                                 (r32)i - ent->rad.h        - ent->pos.y,
+                                 (r32)j + ent->rad.w + 1.0f - ent->pos.x,
+                                 (r32)i + ent->rad.h + 1.0f - ent->pos.y };
                 /* loop over walls defined in this way (top, bottom, left, right) */
                 struct {
                     r32 x0, x1, y, dy, dx;
@@ -157,7 +157,7 @@ UPDATE(Update) /* memory, input */
                 state->font = NULL;
                 fprintf(stderr, "Can't initialize TTF\n");
             } else {
-                state->font = TTF_OpenFont("../res/VeraMono.ttf", 26);
+                state->font = TTF_OpenFont("../res/VeraMono.ttf", 12);
                 if (state->font == NULL)
                     fprintf(stderr, "Can't open the font: %s\n", TTF_GetError());
             }
@@ -259,10 +259,10 @@ RENDER(Render) /* memory, renderer, dt */
 
     /* render the player */
     struct Entity *ent = &state->player;
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (ent->pos.x + ent->vel.x * dt - ent->rad.w)),
-                             (int)(PIXEL_PERMETER * (ent->pos.y + ent->vel.y * dt - ent->rad.h)),
-                             (int)(PIXEL_PERMETER * ent->rad.w * 2),
-                             (int)(PIXEL_PERMETER * ent->rad.h * 2) };
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
+                             (int)(PIXEL_PERMETER * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
+                             (int)(PIXEL_PERMETER * ent->rad.w * 2.0f + 0.5f),
+                             (int)(PIXEL_PERMETER * ent->rad.h * 2.0f + 0.5f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 
@@ -290,7 +290,7 @@ RENDER(Render) /* memory, renderer, dt */
                 SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
                 int tw, th;
                 SDL_QueryTexture(texture, NULL, NULL, &tw, &th);
-                SDL_Rect r = { 25, height - 25 - TTF_FontLineSkip(state->font) * (i+1), tw + 1, th };
+                SDL_Rect r = { 25, height - 25 - TTF_FontLineSkip(state->font) * (i+1), tw, th };
                 SDL_RenderCopy(renderer, texture, NULL, &r);
                 SDL_FreeSurface(surface);
                 SDL_DestroyTexture(texture);
