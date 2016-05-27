@@ -6,7 +6,7 @@
 #include "game.h"
 
 /* Compare macro to make it more legible */
-#define C_COMPARE(input_text, command) (strcmp(input_text + 2, command) == 0)
+#define I_COMPARE(input_text, command) (strcmp(input_text + 2, command) == 0)
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
@@ -24,20 +24,20 @@
  */
 static
 void
-C_ExecuteCommand(struct GameState *state, struct GameInput *input)
+I_ExecuteCommand(struct GameState *state, struct GameInput *input)
 {
-    if (C_COMPARE(input->input_text, "reload")) {
+    if (I_COMPARE(input->input_text, "reload")) {
         input->reload_lib = true;
-    } else if (C_COMPARE(input->input_text, "restart")) {
+    } else if (I_COMPARE(input->input_text, "restart")) {
         input->reload_lib = true;
         state->init = false;
-    } else if (C_COMPARE(input->input_text, "quit")) {
+    } else if (I_COMPARE(input->input_text, "quit")) {
         input->quit.was_down = true;
-    } else if (C_COMPARE(input->input_text, "clear")) {
+    } else if (I_COMPARE(input->input_text, "clear")) {
         for (int i = 0; i < 10; state->buffer[i++][0] = '\0') /* that's it */;
         input->input_text[2] = '\0';
         input->input_len = 2;
-    } else if (C_COMPARE(input->input_text, "")) {
+    } else if (I_COMPARE(input->input_text, "")) {
         /* do nothing */
     } else { /* text entered was invalid, so say so */
         memcpy(input->input_text + 2, "invalid", 8);
@@ -113,7 +113,7 @@ UPDATE(Update) /* memory, input */
     if (input->input_entered && input->input_len > 0) {
         for (int i = 9; i > 1; i--)
             memcpy(state->buffer[i], state->buffer[i-1], sizeof(state->buffer[i]));
-        C_ExecuteCommand(state, input);
+        I_ExecuteCommand(state, input);
     } else {
         input->input_entered = false;
     }
@@ -122,7 +122,7 @@ UPDATE(Update) /* memory, input */
     memcpy(state->buffer[0], input->input_text, input->input_len + 1);
 
     /* handle everything for quitting out immediately */
-    if (C_IsPressed(&input->quit)) {
+    if (I_IsPressed(&input->quit)) {
         TTF_CloseFont(state->font);
         state->font = NULL;
         TTF_Quit();
@@ -130,7 +130,7 @@ UPDATE(Update) /* memory, input */
     }
 
     /* toggle whether we're using the console or not */
-    if (C_IsToggled(&input->console)) {
+    if (I_IsToggled(&input->console)) {
         state->console = !state->console;
         if (state->console)
             SDL_StartTextInput();
@@ -146,16 +146,16 @@ UPDATE(Update) /* memory, input */
 
     /* adjust the player movement */
     struct Vec2 acc = { 0.0f, 0.0f };
-    if (C_IsPressed(&input->move_down)) {
+    if (I_IsPressed(&input->move_down)) {
         acc.y += 1.0f;
     }
-    if (C_IsPressed(&input->move_up)) {
+    if (I_IsPressed(&input->move_up)) {
         acc.y -= 1.0f;
     }
-    if (C_IsPressed(&input->move_right)) {
+    if (I_IsPressed(&input->move_right)) {
         acc.x += 1.0f;
     }
-    if (C_IsPressed(&input->move_left)) {
+    if (I_IsPressed(&input->move_left)) {
         acc.x -= 1.0f;
     }
     acc = V2_Mul(25.0f, V2_Norm(acc));
