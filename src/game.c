@@ -149,7 +149,7 @@ UPDATE(Update) /* memory, input */
         state->player.worldy = 0;
         state->player.pos = (struct Vec2){ 5.0f, 5.0f };
         state->player.vel = (struct Vec2){ 0.0f, 0.0f };
-        state->player.rad = (struct Vec2){ 0.45f, 0.6f };
+        state->player.rad = (struct Vec2){ 0.45f, 1.2f };
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -239,30 +239,43 @@ RENDER(Render) /* memory, renderer, dt */
     /* has been initialized in update */
     struct GameState *state = (struct GameState *)memory->perm_mem;
 
+    SDL_Surface *temp;
+    if (state->floor_texture == NULL) {
+        temp = SDL_LoadBMP("../res/tiles/tile_floor.bmp");
+        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
+        state->floor_texture = SDL_CreateTextureFromSurface(renderer, temp);
+        SDL_FreeSurface(temp);
+    }
+    if (state->wall_texture == NULL) {
+        temp = SDL_LoadBMP("../res/tiles/tile_wall.bmp");
+        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
+        state->wall_texture = SDL_CreateTextureFromSurface(renderer, temp);
+        SDL_FreeSurface(temp);
+    }
+
     SDL_SetRenderDrawColor(renderer, 125, 125, 125, 255);
     SDL_RenderClear(renderer);
 
     /* render the tiles */
-    SDL_Rect rect = { 0, 0, PIXEL_PERMETER, PIXEL_PERMETER };
+    SDL_Rect rect = { 0, 0, PIXEL_PERMETERX, PIXEL_PERMETERY };
     for (int i = 0; i < 10; i++) {
         rect.x = 0;
         for (int j = 0; j < 10; j++) {
             if (state->world.chunks[0].tiles[i * 10 + j])
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                SDL_RenderCopy(renderer, state->wall_texture, NULL, &(SDL_Rect){ rect.x, rect.y - PIXEL_PERMETERY, rect.w, rect.h*2 });
             else
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            SDL_RenderFillRect(renderer, &rect);
-            rect.x += PIXEL_PERMETER;
+                SDL_RenderCopy(renderer, state->floor_texture, NULL, &rect);
+            rect.x += PIXEL_PERMETERX;
         }
-        rect.y += PIXEL_PERMETER;
+        rect.y += PIXEL_PERMETERY;
     }
 
     /* render the player */
     struct Entity *ent = &state->player;
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETER * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
-                             (int)(PIXEL_PERMETER * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
-                             (int)(PIXEL_PERMETER * ent->rad.w * 2.0f + 0.5f),
-                             (int)(PIXEL_PERMETER * ent->rad.h * 2.0f + 0.5f) };
+    SDL_Rect player_rect = { (int)(PIXEL_PERMETERX * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
+                             (int)(PIXEL_PERMETERY * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
+                             (int)(PIXEL_PERMETERX * ent->rad.w * 2.0f + 0.5f),
+                             (int)(PIXEL_PERMETERY * ent->rad.h * 2.0f + 0.5f) };
     SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 

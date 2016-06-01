@@ -1,7 +1,8 @@
 #ifndef _GAME_h_
 #include "math.h"
 
-#define PIXEL_PERMETER 32
+#define PIXEL_PERMETERX 64
+#define PIXEL_PERMETERY 48
 
 struct Entity {
     u32 worldx, worldy;
@@ -32,6 +33,9 @@ struct GameState {
 
     /* player */
     struct Entity player;
+
+    SDL_Texture *floor_texture;
+    SDL_Texture *wall_texture;
 };
 
 #define _GAME_h_
