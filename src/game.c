@@ -52,6 +52,16 @@ I_ExecuteCommand(struct GameState *state, struct GameInput *input)
     input->input_len = 2;
 }
 
+/**
+ * Move an entity with a specific acceleration.
+ *
+ * @world : the current world
+ * @ent   : entity that's being moved
+ * @acc   : the acceleration we move by
+ *
+ * The entity should know exactly where it is in the world, as well as its
+ * world chunk so that it knows what entities to check.
+ */
 void
 Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
 {
@@ -59,46 +69,38 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
 
     /* don't set the position until after we check collisions */
     struct Vec2 dpos = V2_Mul(SEC_PER_UPDATE, ent->vel);
-    struct Vec2 npos = V2_Add(ent->pos, dpos);
-
-    int min_tilex, max_tilex, min_tiley, max_tiley;
-    min_tilex = (int)MIN(npos.x - ent->rad.w, ent->pos.x - ent->rad.w);
-    min_tiley = (int)MIN(npos.y - ent->rad.h, ent->pos.y - ent->rad.h);
-    max_tilex = (int)MAX(npos.x + ent->rad.w, ent->pos.x + ent->rad.w);
-    max_tiley = (int)MAX(npos.y + ent->rad.h, ent->pos.y + ent->rad.h);
 
     /* actual collision detection and handling */
     r32 tleft = 1.0f;
     for (int z = 0; z < 4 && tleft > 0.0f; z++) {
         struct Vec2 normal = {0.0f, 0.0f};
         r32 tmin = 1.0f;
-        for (int i = min_tiley; i <= max_tiley; i++) {
-            for (int j = min_tilex; j <= max_tilex; j++) {
-                if (i < 0 || i > 9 || j < 0 || j > 9) continue;
-                if (world->chunks[0].tiles[i * 10 + j] == 0) continue;
-                /* points with small epsilon for flush collision */
-                r32 points[] = { (r32)j - ent->rad.w        - ent->pos.x,
-                                 (r32)i - ent->rad.h        - ent->pos.y,
-                                 (r32)j + ent->rad.w + 1.0f - ent->pos.x,
-                                 (r32)i + ent->rad.h + 1.0f - ent->pos.y };
-                /* loop over walls defined in this way (top, bottom, left, right) */
-                struct {
-                    r32 x0, x1, y, dy, dx;
-                    struct Vec2 normal;
-                } walls[] = {{ points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
-                             { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
-                             { points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
-                             { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
+        for (struct Entity *cmp_ent = ent->chunk->first; cmp_ent != NULL; cmp_ent = cmp_ent->next) {
+            if (cmp_ent == ent)
+                continue;
 
-                for (int walli = 0; walli < 4; walli++) {
-                    r32 epsilon = 0.001f;
-                    if (fabsf(walls[walli].dy) > 0.001f) {
-                        r32 t = walls[walli].y / walls[walli].dy;
-                        r32 x = t * walls[walli].dx;
-                        if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
-                            tmin = MAX(0.0f, t - epsilon);
-                            normal = walls[walli].normal;
-                        }
+            /* points with small epsilon for flush collision */
+            r32 points[] = { cmp_ent->pos.x - cmp_ent->rad.x - ent->rad.w - ent->pos.x,
+                             cmp_ent->pos.y - cmp_ent->rad.y - ent->rad.h - ent->pos.y,
+                             cmp_ent->pos.x + cmp_ent->rad.x + ent->rad.w - ent->pos.x,
+                             cmp_ent->pos.y + cmp_ent->rad.y + ent->rad.h - ent->pos.y };
+            /* loop over walls defined in this way (top, bottom, left, right) */
+            struct {
+                r32 x0, x1, y, dy, dx;
+                struct Vec2 normal;
+            } walls[] = {{ points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
+                         { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
+                         { points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
+                         { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
+
+            for (int walli = 0; walli < 4; walli++) {
+                r32 epsilon = 0.001f;
+                if (fabsf(walls[walli].dy) > 0.001f) {
+                    r32 t = walls[walli].y / walls[walli].dy;
+                    r32 x = t * walls[walli].dx;
+                    if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
+                        tmin = MAX(0.0f, t - epsilon);
+                        normal = walls[walli].normal;
                     }
                 }
             }
@@ -110,6 +112,53 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
         dpos = V2_Sub(dpos, V2_Mul(V2_Dot(dpos, normal), normal));
         tleft -= tmin;
     }
+}
+
+static
+struct WorldChunk *
+W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
+{
+    if (x < 1 || y < 1 || x == ~0 || y == ~0) 
+        return NULL;
+
+    u32 hash = (x + y * 31) % WORLD_HASHSIZE;
+    struct WorldChunk *result = &world->chunks[hash];
+    while (result != NULL) {
+        if (result->next == NULL && (result->x != x || result->y != y) && create) {
+            /* TODO(david): need proper alloc */
+            result->next = calloc(1, sizeof(struct WorldChunk));
+            result = result->next;
+            result->x = x;
+            result->y = y;
+        } 
+        if (result->x == x && result->y == y) {
+            return result;
+        }
+        
+        result = result->next;
+    }
+
+    return NULL;
+}
+
+static
+struct WorldChunk *
+W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
+{
+    u32 world_e[] = { chunk->x, chunk->y };
+    for (int i = 0; i < 2; i++) {
+        if (pos->e[i] < 0.0f) {
+            world_e[i] -= 1;
+            pos->e[i] += 10.0f;
+        } else if (pos->e[i] >= 10.0f) {
+            world_e[i] += 1;
+            pos->e[i] += 1;
+        }
+    }
+
+    if (world_e[0] != chunk->x || world_e[1] != chunk->y)
+        return W_GetChunk(world, world_e[0], world_e[1], false);
+    return chunk;
 }
 
 /**
@@ -132,24 +181,37 @@ UPDATE(Update) /* memory, input */
         input->input_text[2] = '\0';
         input->input_len = 2;
 
-        struct WorldChunk *chunk = &state->world.chunks[0];
-        chunk->x = 0;
-        chunk->y = 0;
+        state->num_ents = 0;
+
+        struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
-                if (j == 0 || j == 9 || i == 0 || i == 9)
-                    chunk->tiles[i * 10 + j] = 1;
-                else
-                    chunk->tiles[i * 10 + j] = 0;
+                if (j == 0 || j == 9 || i == 0 || i == 9) {
+                    state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
+                                                                     .pos.x = (r32)j + 0.5f,
+                                                                     .pos.y = (r32)i + 0.5f,
+                                                                     .vel = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .rad = (struct Vec2){ 0.5f, 0.5f } };
+
+                    if (chunk->first == NULL) {
+                        chunk->first = &state->ents[state->num_ents];
+                        chunk->first->next = chunk->first;
+                        chunk->first->prev = chunk->first;
+                    }
+                    chunk->first->prev->next = &state->ents[state->num_ents];
+                    chunk->first->prev = &state->ents[state->num_ents];
+
+                    state->num_ents++;
+                }
             }
         }
-        chunk->next = NULL;
 
-        state->player.worldx = 0;
-        state->player.worldy = 0;
+        state->player.chunk = chunk;
         state->player.pos = (struct Vec2){ 5.0f, 5.0f };
         state->player.vel = (struct Vec2){ 0.0f, 0.0f };
         state->player.rad = (struct Vec2){ 0.45f, 1.2f };
+        chunk->first->prev->next = &state->player;
+        chunk->first->prev = &state->player;
 
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
@@ -239,14 +301,17 @@ RENDER(Render) /* memory, renderer, dt */
     /* has been initialized in update */
     struct GameState *state = (struct GameState *)memory->perm_mem;
 
-    SDL_Surface *temp;
+    if (!state->init) return;
+
     if (state->floor_texture == NULL) {
+        SDL_Surface *temp;
         temp = SDL_LoadBMP("../res/tiles/tile_floor.bmp");
         SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
         state->floor_texture = SDL_CreateTextureFromSurface(renderer, temp);
         SDL_FreeSurface(temp);
     }
     if (state->wall_texture == NULL) {
+        SDL_Surface *temp;
         temp = SDL_LoadBMP("../res/tiles/tile_wall.bmp");
         SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
         state->wall_texture = SDL_CreateTextureFromSurface(renderer, temp);
@@ -261,23 +326,56 @@ RENDER(Render) /* memory, renderer, dt */
     for (int i = 0; i < 10; i++) {
         rect.x = 0;
         for (int j = 0; j < 10; j++) {
-            if (state->world.chunks[0].tiles[i * 10 + j])
-                SDL_RenderCopy(renderer, state->wall_texture, NULL, &(SDL_Rect){ rect.x, rect.y - PIXEL_PERMETERY, rect.w, rect.h*2 });
-            else
-                SDL_RenderCopy(renderer, state->floor_texture, NULL, &rect);
+            SDL_RenderCopy(renderer, state->floor_texture, NULL, &rect);
             rect.x += PIXEL_PERMETERX;
         }
         rect.y += PIXEL_PERMETERY;
     }
 
-    /* render the player */
-    struct Entity *ent = &state->player;
-    SDL_Rect player_rect = { (int)(PIXEL_PERMETERX * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
-                             (int)(PIXEL_PERMETERY * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
-                             (int)(PIXEL_PERMETERX * ent->rad.w * 2.0f + 0.5f),
-                             (int)(PIXEL_PERMETERY * ent->rad.h * 2.0f + 0.5f) };
-    SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
-    SDL_RenderFillRect(renderer, &player_rect);
+    struct RenderLink *first = calloc(1, sizeof(struct RenderLink));
+    first->ent = state->player.chunk->first;
+    for (struct Entity *ent = state->player.chunk->first->next; ent != NULL; ent = ent->next) {
+        struct RenderLink *new = calloc(1, sizeof(struct RenderLink));
+        new->ent = ent;
+
+        for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
+            if (ren->ent->pos.y > ent->pos.y) {
+                if (ren == first) {
+                    first = new;
+                    ren->prev = first;
+                } else {
+                    ren->prev->next = new;
+                    ren->prev = ren->prev->next;
+                }
+                ren->prev->next = ren;
+                break;
+            } else if (ren->next == NULL) {
+                ren->next = new;
+                new->prev = ren;
+                break;
+            }
+        }
+    }
+
+    for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
+        struct Entity *ent = ren->ent;
+
+        rect.x = (int)ent->pos.x * PIXEL_PERMETERX;
+        rect.y = (int)ent->pos.y * PIXEL_PERMETERY - 2 * PIXEL_PERMETERY;
+        rect.w = PIXEL_PERMETERX;
+        rect.h = PIXEL_PERMETERY*3;
+        
+        SDL_RenderCopy(renderer, state->wall_texture, NULL, &rect);
+    }
+
+//    /* render the player */
+//    struct Entity *ent = &state->player;
+//    SDL_Rect player_rect = { (int)(PIXEL_PERMETERX * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
+//                             (int)(PIXEL_PERMETERY * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
+//                             (int)(PIXEL_PERMETERX * ent->rad.w * 2.0f + 0.5f),
+//                             (int)(PIXEL_PERMETERY * ent->rad.h * 2.0f + 0.5f) };
+//    SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
+//    SDL_RenderFillRect(renderer, &player_rect);
 
 //    /* square to show the movement vactor is working */
 //    SDL_Rect move_vector = { (int)(PIXEL_PERMETER * state->pos.x),
