@@ -4,15 +4,31 @@
 #define PIXEL_PERMETERX 64
 #define PIXEL_PERMETERY 48
 
+enum R_Texture {
+    R_player = 0,
+    R_floor = 1,
+    R_wall = 2,
+
+    R_COUNT
+};
+
 struct Entity {
     struct WorldChunk *chunk;
 
-    struct Entity *prev;
-    struct Entity *next;
+    struct Entity     *prev;
+    struct Entity     *next;
 
-    struct Vec2 pos;
-    struct Vec2 vel;
-    struct Vec2 rad;
+    struct Vec2       pos;
+    struct Vec2       vel;
+    struct Vec2       rad; /* floor radius */
+
+    /* offset from pos to top left, then bot right */
+    struct Vec2       tl_point;
+    struct Vec2       br_point;
+
+    enum   R_Texture  render_num;
+    struct Vec2       render_off;
+    struct Vec2       render_dim;
 };
 
 struct RenderLink {
@@ -48,8 +64,8 @@ struct GameState {
     struct Entity ents[256];
     int num_ents;
 
-    SDL_Texture *floor_texture;
-    SDL_Texture *wall_texture;
+
+    SDL_Texture *R_textures[R_COUNT];
 };
 
 #define _GAME_h_

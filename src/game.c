@@ -80,27 +80,51 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
                 continue;
 
             /* points with small epsilon for flush collision */
-            r32 points[] = { cmp_ent->pos.x - cmp_ent->rad.x - ent->rad.w - ent->pos.x,
-                             cmp_ent->pos.y - cmp_ent->rad.y - ent->rad.h - ent->pos.y,
-                             cmp_ent->pos.x + cmp_ent->rad.x + ent->rad.w - ent->pos.x,
-                             cmp_ent->pos.y + cmp_ent->rad.y + ent->rad.h - ent->pos.y };
+            r32 points_y[] = { cmp_ent->pos.x - cmp_ent->rad.x - ent->rad.x - ent->pos.x,
+                               cmp_ent->pos.y - cmp_ent->rad.y - ent->rad.y - ent->pos.y,
+                               cmp_ent->pos.x + cmp_ent->rad.x + ent->rad.x - ent->pos.x,
+                               cmp_ent->pos.y + cmp_ent->rad.y + ent->rad.y - ent->pos.y };
             /* loop over walls defined in this way (top, bottom, left, right) */
             struct {
                 r32 x0, x1, y, dy, dx;
                 struct Vec2 normal;
-            } walls[] = {{ points[0], points[2], points[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
-                         { points[0], points[2], points[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
-                         { points[1], points[3], points[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
-                         { points[1], points[3], points[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
+            } walls_y[] = {{ points_y[0], points_y[2], points_y[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
+                           { points_y[0], points_y[2], points_y[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
+                           { points_y[1], points_y[3], points_y[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
+                           { points_y[1], points_y[3], points_y[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
 
             for (int walli = 0; walli < 4; walli++) {
                 r32 epsilon = 0.001f;
-                if (fabsf(walls[walli].dy) > 0.001f) {
-                    r32 t = walls[walli].y / walls[walli].dy;
-                    r32 x = t * walls[walli].dx;
-                    if (t > 0.0f && walls[walli].x0 < x && x < walls[walli].x1 && tmin > t) {
+                if (fabsf(walls_y[walli].dy) > 0.001f) {
+                    r32 t = walls_y[walli].y / walls_y[walli].dy;
+                    r32 x = t * walls_y[walli].dx;
+                    if (t > 0.0f && walls_y[walli].x0 < x && x < walls_y[walli].x1 && tmin > t) {
                         tmin = MAX(0.0f, t - epsilon);
-                        normal = walls[walli].normal;
+                        normal = walls_y[walli].normal;
+                    }
+                }
+            }
+
+            /* points with small epsilon for flush collision */
+            r32 points_z[] = { cmp_ent->pos.x - cmp_ent->tl_point.x - ent->tl_point.w - ent->pos.x,
+                               cmp_ent->pos.y - cmp_ent->tl_point.y - ent->tl_point.h - ent->pos.y,
+                               cmp_ent->pos.x + cmp_ent->br_point.x + ent->br_point.w - ent->pos.x,
+                               cmp_ent->pos.y + cmp_ent->br_point.y + ent->br_point.h - ent->pos.y };
+            /* loop over walls defined in this way (top, bottom, left, right) */
+            struct {
+                r32 x0, x1, y, dy, dx;
+                struct Vec2 normal;
+            } walls_z[] = {{ points_z[0], points_z[2], points_z[1], dpos.y, dpos.x, {  0.0f, -1.0f } },
+                           { points_z[0], points_z[2], points_z[3], dpos.y, dpos.x, {  0.0f,  1.0f } },
+                           { points_z[1], points_z[3], points_z[0], dpos.x, dpos.y, { -1.0f,  0.0f } },
+                           { points_z[1], points_z[3], points_z[2], dpos.x, dpos.y, {  1.0f,  0.0f } }};
+
+            for (int walli = 0; walli < 4; walli++) {
+                if (fabsf(walls_z[walli].dy) > 0.001f) {
+                    r32 t = walls_z[walli].y / walls_z[walli].dy;
+                    r32 x = t * walls_z[walli].dx;
+                    if (t > 0.0f && walls_z[walli].x0 < x && x < walls_z[walli].x1 && tmin > t) {
+                        /* TODO(david): handle a collision */
                     }
                 }
             }
@@ -191,7 +215,12 @@ UPDATE(Update) /* memory, input */
                                                                      .pos.x = (r32)j + 0.5f,
                                                                      .pos.y = (r32)i + 0.5f,
                                                                      .vel = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .rad = (struct Vec2){ 0.5f, 0.5f } };
+                                                                     .rad = (struct Vec2){ 0.5f, 0.5f },
+                                                                     .tl_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .br_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .render_num = R_wall,
+                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f },
+                                                                     .render_dim = (struct Vec2){ 1.0f, 2.0f } };
 
                     if (chunk->first == NULL) {
                         chunk->first = &state->ents[state->num_ents];
@@ -209,7 +238,12 @@ UPDATE(Update) /* memory, input */
         state->player.chunk = chunk;
         state->player.pos = (struct Vec2){ 5.0f, 5.0f };
         state->player.vel = (struct Vec2){ 0.0f, 0.0f };
-        state->player.rad = (struct Vec2){ 0.45f, 1.2f };
+        state->player.rad = (struct Vec2){ 0.35f, 0.2f };
+        state->player.tl_point = (struct Vec2){ 0.4f, 2.0f };
+        state->player.br_point = (struct Vec2){ 0.4f, 0.0f };
+        state->player.render_num = R_player;
+        state->player.render_off = (struct Vec2){ -0.5f, -2.5f };
+        state->player.render_dim = (struct Vec2){ 1.0f, 3.0f };
         chunk->first->prev->next = &state->player;
         chunk->first->prev = &state->player;
 
@@ -303,18 +337,21 @@ RENDER(Render) /* memory, renderer, dt */
 
     if (!state->init) return;
 
-    if (state->floor_texture == NULL) {
+    if (state->R_textures[0] == NULL) {
         SDL_Surface *temp;
+        temp = SDL_LoadBMP("../res/tiles/sprite_player.bmp");
+        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
+        state->R_textures[0] = SDL_CreateTextureFromSurface(renderer, temp);
+        SDL_FreeSurface(temp);
+
         temp = SDL_LoadBMP("../res/tiles/tile_floor.bmp");
         SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
-        state->floor_texture = SDL_CreateTextureFromSurface(renderer, temp);
+        state->R_textures[1] = SDL_CreateTextureFromSurface(renderer, temp);
         SDL_FreeSurface(temp);
-    }
-    if (state->wall_texture == NULL) {
-        SDL_Surface *temp;
+
         temp = SDL_LoadBMP("../res/tiles/tile_wall.bmp");
         SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
-        state->wall_texture = SDL_CreateTextureFromSurface(renderer, temp);
+        state->R_textures[2] = SDL_CreateTextureFromSurface(renderer, temp);
         SDL_FreeSurface(temp);
     }
 
@@ -326,7 +363,7 @@ RENDER(Render) /* memory, renderer, dt */
     for (int i = 0; i < 10; i++) {
         rect.x = 0;
         for (int j = 0; j < 10; j++) {
-            SDL_RenderCopy(renderer, state->floor_texture, NULL, &rect);
+            SDL_RenderCopy(renderer, state->R_textures[R_floor], NULL, &rect);
             rect.x += PIXEL_PERMETERX;
         }
         rect.y += PIXEL_PERMETERY;
@@ -360,12 +397,12 @@ RENDER(Render) /* memory, renderer, dt */
     for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
         struct Entity *ent = ren->ent;
 
-        rect.x = (int)ent->pos.x * PIXEL_PERMETERX;
-        rect.y = (int)ent->pos.y * PIXEL_PERMETERY - 2 * PIXEL_PERMETERY;
-        rect.w = PIXEL_PERMETERX;
-        rect.h = PIXEL_PERMETERY*3;
+        rect.x = (ent->pos.x + ent->render_off.x) * PIXEL_PERMETERX + 0.5f;
+        rect.y = (ent->pos.y + ent->render_off.y) * PIXEL_PERMETERY + 0.5f;
+        rect.w = PIXEL_PERMETERX * ent->render_dim.x;
+        rect.h = PIXEL_PERMETERY * ent->render_dim.y;
         
-        SDL_RenderCopy(renderer, state->wall_texture, NULL, &rect);
+        SDL_RenderCopy(renderer, state->R_textures[ent->render_num], NULL, &rect);
     }
 
 //    /* render the player */
