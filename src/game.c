@@ -247,6 +247,9 @@ UPDATE(Update) /* memory, input */
         chunk->first->prev->next = &state->player;
         chunk->first->prev = &state->player;
 
+        state->cam.x = state->player.pos.x;
+        state->cam.y = state->player.pos.y;
+
         /* Initialize font as best possible, if it fails then ensure it's NULL */
         if (!TTF_WasInit()) {
             if (TTF_Init() == -1) {
@@ -318,6 +321,9 @@ UPDATE(Update) /* memory, input */
     acc = V2_Mul(25.0f, V2_Norm(acc));
 
     Move(&state->world, &state->player, acc);
+
+    state->cam.x = state->player.pos.x;
+    state->cam.y = state->player.pos.y;
 }
 
 /**
@@ -334,6 +340,9 @@ RENDER(Render) /* memory, renderer, dt */
 {
     /* has been initialized in update */
     struct GameState *state = (struct GameState *)memory->perm_mem;
+
+    int screenw, screenh;
+    SDL_RenderGetLogicalSize(renderer, &screenw, &screenh);
 
     if (!state->init) return;
 
@@ -358,16 +367,7 @@ RENDER(Render) /* memory, renderer, dt */
     SDL_SetRenderDrawColor(renderer, 125, 125, 125, 255);
     SDL_RenderClear(renderer);
 
-    /* render the tiles */
-    SDL_Rect rect = { 0, 0, PIXEL_PERMETERX, PIXEL_PERMETERY };
-    for (int i = 0; i < 10; i++) {
-        rect.x = 0;
-        for (int j = 0; j < 10; j++) {
-            SDL_RenderCopy(renderer, state->R_textures[R_floor], NULL, &rect);
-            rect.x += PIXEL_PERMETERX;
-        }
-        rect.y += PIXEL_PERMETERY;
-    }
+    /* TODO(david): render the floor */
 
     struct RenderLink *first = calloc(1, sizeof(struct RenderLink));
     first->ent = state->player.chunk->first;
@@ -394,11 +394,12 @@ RENDER(Render) /* memory, renderer, dt */
         }
     }
 
+    SDL_Rect rect;
     for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
         struct Entity *ent = ren->ent;
 
-        rect.x = (ent->pos.x + ent->render_off.x) * PIXEL_PERMETERX + 0.5f;
-        rect.y = (ent->pos.y + ent->render_off.y) * PIXEL_PERMETERY + 0.5f;
+        rect.x = (ent->pos.x + ent->render_off.x - state->cam.x) * PIXEL_PERMETERX + 0.5f + (screenw / 2.0f);
+        rect.y = (ent->pos.y + ent->render_off.y - state->cam.y) * PIXEL_PERMETERY + 0.5f + (screenh / 2.0f);
         rect.w = PIXEL_PERMETERX * ent->render_dim.x;
         rect.h = PIXEL_PERMETERY * ent->render_dim.y;
         

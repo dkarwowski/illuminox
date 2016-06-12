@@ -59,6 +59,8 @@ struct GameState {
     bool console;
     char buffer[10][128];
 
+    struct Vec2 cam; /* camera to compare to */
+
     /* player */
     struct Entity player;
     struct Entity ents[256];
