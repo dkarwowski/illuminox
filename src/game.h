@@ -1,5 +1,6 @@
 #ifndef _GAME_h_
 #include "math.h"
+#include "game_config.h"
 
 #define PIXEL_PERMETERX 64
 #define PIXEL_PERMETERY 48

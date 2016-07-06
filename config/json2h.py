@@ -31,11 +31,12 @@ def load_file(filename):
                        " }"
                 dt = str(frame["duration"])
                 index = str(i)
-                sgroup.append( "{ " +                    \
-                               ".rect=" + rect + ", " +   \
-                               ".dt=" + dt + ", " +       \
-                               ".index=" + index + ", " + \
-                               ".count=" + str(count) +   \
+                sgroup.append( "{ " +                                \
+                               ".rect=" + rect + ", " +              \
+                               ".dt=" + dt + ", " +                  \
+                               ".sheet=" + dest_name.upper() + "," + \
+                               ".index=" + index + ", " +            \
+                               ".count=" + str(count) +              \
                                " }" )
                 tags.append(anim + index)
             sprites.extend(sgroup)
@@ -89,7 +90,7 @@ if __name__ == "__main__":
 
         lines.append("")
         lines.append("/* list of sprite sheets */")
-        lines.append("struct SpriteSheet sheets[SpriteSheet_COUNT];")
+        lines.append("struct SpriteSheet SHEETS[SpriteSheet_COUNT];")
 
         lines.append("")
         lines.append("/* tag mapped to animation */")
@@ -103,6 +104,7 @@ if __name__ == "__main__":
         lines.append("/* struct for animations */")
         lines.append("struct Animation {")
         lines.append("    SDL_Rect rect;")
+        lines.append("    enum SpriteSheetId sheet;")
         lines.append("    u32 dt;")
         lines.append("    u32 index;")
         lines.append("    u8 count;")

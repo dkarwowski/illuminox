@@ -11,7 +11,7 @@ OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
 OPTIM  :=
 CFLAGS := -fPIC $(shell sdl2-config --cflags) -D_THREAD_SAFE $(OPTIM)
 WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -DDEBUG -g
-LIBS = -ldl -lm $(shell sdl2-config --libs) -lSDL2_ttf
+LIBS = -ldl -lm $(shell sdl2-config --libs) -lSDL2_ttf -lSDL2_image
 
 CONFIGDIR := config
 CONFIGEXT := json

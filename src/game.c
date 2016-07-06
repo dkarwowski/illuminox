@@ -1,4 +1,5 @@
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL.h>
 #include <math.h>
 
@@ -209,6 +210,8 @@ UPDATE(Update) /* memory, input */
         state->num_ents = 0;
 
         struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
+        /* ensure first is null when starting */
+        chunk->first = NULL;
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
                 if (j == 0 || j == 9 || i == 0 || i == 9) {
@@ -219,9 +222,8 @@ UPDATE(Update) /* memory, input */
                                                                      .rad = (struct Vec2){ 0.5f, 0.5f },
                                                                      .tl_point = (struct Vec2){ 0.0f, 0.0f },
                                                                      .br_point = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .render_num = R_wall,
-                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f },
-                                                                     .render_dim = (struct Vec2){ 1.0f, 2.0f } };
+                                                                     .animation = TILE_WALL_STAND0,
+                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f } };
 
                     if (chunk->first == NULL) {
                         chunk->first = &state->ents[state->num_ents];
@@ -242,9 +244,8 @@ UPDATE(Update) /* memory, input */
         state->player.rad = (struct Vec2){ 0.35f, 0.2f };
         state->player.tl_point = (struct Vec2){ 0.4f, 2.0f };
         state->player.br_point = (struct Vec2){ 0.4f, 0.0f };
-        state->player.render_num = R_player;
-        state->player.render_off = (struct Vec2){ -0.5f, -2.5f };
-        state->player.render_dim = (struct Vec2){ 1.0f, 3.0f };
+        state->player.animation = CHARACTER_STAND0;
+        state->player.render_off = (struct Vec2){ -0.5f, -0.5f };
         chunk->first->prev->next = &state->player;
         chunk->first->prev = &state->player;
 
@@ -347,21 +348,19 @@ RENDER(Render) /* memory, renderer, dt */
 
     if (!state->init) return;
 
-    if (state->R_textures[0] == NULL) {
+    if (SHEETS[CHARACTER].w != ~0) {
+        int initted = IMG_Init(IMG_INIT_PNG);
+        if (initted != IMG_INIT_PNG)
+            SDL_LOG("img init failed");
+        /* TODO(david): automate this */
         SDL_Surface *temp;
-        temp = SDL_LoadBMP("../res/tiles/sprite_player.bmp");
-        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
-        state->R_textures[0] = SDL_CreateTextureFromSurface(renderer, temp);
+        temp = IMG_Load("../res/sprites/character.png");
+        SHEETS[CHARACTER].texture = SDL_CreateTextureFromSurface(renderer, temp);
+        SHEETS[CHARACTER].w = ~0;
         SDL_FreeSurface(temp);
 
-        temp = SDL_LoadBMP("../res/tiles/tile_floor.bmp");
-        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
-        state->R_textures[1] = SDL_CreateTextureFromSurface(renderer, temp);
-        SDL_FreeSurface(temp);
-
-        temp = SDL_LoadBMP("../res/tiles/tile_wall.bmp");
-        SDL_SetColorKey(temp, SDL_TRUE, SDL_MapRGB(temp->format, 255, 0, 255));
-        state->R_textures[2] = SDL_CreateTextureFromSurface(renderer, temp);
+        temp = IMG_Load("../res/sprites/tile_wall.png");
+        SHEETS[TILE_WALL].texture = SDL_CreateTextureFromSurface(renderer, temp);
         SDL_FreeSurface(temp);
     }
 
@@ -398,13 +397,14 @@ RENDER(Render) /* memory, renderer, dt */
     SDL_Rect rect;
     for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
         struct Entity *ent = ren->ent;
+        struct Animation *anim = &SPRITES[ent->animation];
 
         rect.x = (ent->pos.x + ent->render_off.x - state->cam.x) * PIXEL_PERMETERX + 0.5f + (screenw / 2.0f);
         rect.y = (ent->pos.y + ent->render_off.y - state->cam.y) * PIXEL_PERMETERY + 0.5f + (screenh / 2.0f);
-        rect.w = PIXEL_PERMETERX * ent->render_dim.x;
-        rect.h = PIXEL_PERMETERY * ent->render_dim.y;
+        rect.w = PIXEL_PERMETERX * ((float)(anim->rect.w) / 32.0f); /* TODO(david): solid lines */
+        rect.h = PIXEL_PERMETERY * ((float)(anim->rect.h) / 24.0f);
         
-        SDL_RenderCopy(renderer, state->R_textures[ent->render_num], NULL, &rect);
+        SDL_RenderCopy(renderer, SHEETS[anim->sheet].texture, &anim->rect, &rect);
     }
 
 //    /* render the player */
