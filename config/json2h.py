@@ -19,48 +19,48 @@ def load_file(filename):
         for tag in json_info["meta"]["frameTags"]:
             anim = (dest_name + "_" + tag["name"]).upper()
             count = tag["to"] - tag["from"] + 1
-            tags.append(anim)
             sgroup = []
 
             for i in range(tag["from"], tag["to"] + 1):
                 frame = json_info["frames"][i]
                 rect = "{ " + \
-                       "x=" + str(frame["frame"]["x"]) + ", " + \
-                       "y=" + str(frame["frame"]["y"]) + ", " + \
-                       "w=" + str(frame["frame"]["w"]) + ", " + \
-                       "h=" + str(frame["frame"]["h"]) +        \
+                       ".x=" + str(frame["frame"]["x"]) + ", " + \
+                       ".y=" + str(frame["frame"]["y"]) + ", " + \
+                       ".w=" + str(frame["frame"]["w"]) + ", " + \
+                       ".h=" + str(frame["frame"]["h"]) +        \
                        " }"
                 dt = str(frame["duration"])
                 index = str(i)
                 sgroup.append( "{ " +                    \
-                               "rect=" + rect + ", " +   \
-                               "dt=" + dt + ", " +       \
-                               "anim=" + anim + ", "     \
-                               "index=" + index + ", " + \
-                               "count=" + str(count) +   \
+                               ".rect=" + rect + ", " +   \
+                               ".dt=" + dt + ", " +       \
+                               ".index=" + index + ", " + \
+                               ".count=" + str(count) +   \
                                " }" )
-            sprites.append(sgroup)
+                tags.append(anim + index)
+            sprites.extend(sgroup)
 
-    return ( tags, sprites )
+    return ( dest_name.upper(), tags, sprites )
 
 if __name__ == "__main__":
-    base_path = "./config/" # for configuration
-    dest_file = "./src/config.h" # for configuration
+    dest_file = "./src/game_config.h" # for configuration
 
     arg_count = len(sys.argv)
     if arg_count < 2:
         print_usage("invalid number of arguments")
         exit(0)
 
+    all_sheets = []
     all_tags = []
     all_sprites = []
 
     for i in range(1, arg_count):
-        if not exists(base_path + sys.argv[i]):
+        if not exists(sys.argv[i]):
             print_usage("not a real json file")
             exit(0)
 
-        tags, sprites = load_file(base_path + sys.argv[i])
+        sheet, tags, sprites = load_file(sys.argv[i])
+        all_sheets.append(sheet)
         all_tags.extend(tags)
         all_sprites.extend(sprites)
 
@@ -73,9 +73,27 @@ if __name__ == "__main__":
                 break
 
         lines.append("")
-        lines.append("/* tag mapped to animation */")
-        lines.append("enum AnimId {")
+        lines.append("/* all sprite sheets */")
+        lines.append("enum SpriteSheetId {")
+        for s in all_sheets:
+            lines.append("    " + s + ",")
+        lines.append("    SpriteSheet_COUNT")
+        lines.append("};")
 
+        lines.append("")
+        lines.append("/* sprite sheet struct */")
+        lines.append("struct SpriteSheet {")
+        lines.append("    SDL_Texture *texture;")
+        lines.append("    i32 w, h;")
+        lines.append("};")
+
+        lines.append("")
+        lines.append("/* list of sprite sheets */")
+        lines.append("struct SpriteSheet sheets[SpriteSheet_COUNT];")
+
+        lines.append("")
+        lines.append("/* tag mapped to animation */")
+        lines.append("enum AnimationId {")
         for t in all_tags:
             lines.append("    " + t + ",")
         lines.append("    Anim_COUNT")
@@ -86,21 +104,20 @@ if __name__ == "__main__":
         lines.append("struct Animation {")
         lines.append("    SDL_Rect rect;")
         lines.append("    u32 dt;")
-        lines.append("    enum AnimId anim;")
         lines.append("    u32 index;")
         lines.append("    u8 count;")
         lines.append("};")
 
         lines.append("")
         lines.append("/* animations list */")
-        lines.append("struct Animation sprites[][] = {")
+        lines.append("struct Animation SPRITES[Anim_COUNT] = {")
         for s in all_sprites:
-            lines.append("    {")
-            temp = (",~".join(s)).split("~")
-            for t in temp:
-                lines.append("      " + t)
-            lines.append("    }" + ("," if s != all_sprites[-1] else ""))
+            lines.append("    " + s + ("," if s != all_sprites[-1] else ""))
         lines.append("};")
+
+        lines.append("")
+        lines.append("#define _GAME_CONFIG_h_")
+        lines.append("#endif")
 
     with open(dest_file, 'w') as dest:
         dest.write("\n".join(lines))

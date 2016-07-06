@@ -1,3 +1,5 @@
+#ifndef _CONFIG_h_
+
 /* ensure there's only one of each bound name */
 #define KEY_BINDING(_def) \
     _def(SDLK_BACKQUOTE, console); \
@@ -47,28 +49,5 @@ typedef uintptr_t      uptr;
 #define MEGABYTES(x) (KILOBYTES(x) * 1024)
 #define GIGABYTES(x) (MEGABYTES(x) * 1024)
 
-/* MAKE AUTOGEN - DO NOT CHANGE ANYTHING UNDER THIS LINE */
-
-/* tag mapped to animation */
-enum AnimId {
-    CHARACTER_STAND,
-    Anim_COUNT
-};
-
-/* struct for animations */
-struct Animation {
-    SDL_Rect rect;
-    u32 dt;
-    enum AnimId anim;
-    u32 index;
-    u8 count;
-};
-
-/* animations list */
-struct Animation sprites[][] = {
-    {
-      { rect={ x=0, y=0, w=32, h=48 }, dt=100, anim=CHARACTER_STAND, index=0, count=3 },
-      { rect={ x=32, y=0, w=32, h=48 }, dt=100, anim=CHARACTER_STAND, index=1, count=3 },
-      { rect={ x=64, y=0, w=32, h=48 }, dt=100, anim=CHARACTER_STAND, index=2, count=3 }
-    }
-};
+#define _CONFIG_h_
+#endif

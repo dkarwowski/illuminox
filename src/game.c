@@ -4,6 +4,7 @@
 
 #include "main.h"
 #include "game.h"
+#include "game_config.h"
 
 /* Compare macro to make it more legible */
 #define I_COMPARE(input_text, command) (strcmp(input_text + 2, command) == 0)

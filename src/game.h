@@ -13,22 +13,21 @@ enum R_Texture {
 };
 
 struct Entity {
-    struct WorldChunk *chunk;
+    struct WorldChunk  *chunk;
 
-    struct Entity     *prev;
-    struct Entity     *next;
+    struct Entity      *prev;
+    struct Entity      *next;
 
-    struct Vec2       pos;
-    struct Vec2       vel;
-    struct Vec2       rad; /* floor radius */
+    struct Vec2        pos;
+    struct Vec2        vel;
+    struct Vec2        rad; /* floor radius */
 
     /* offset from pos to top left, then bot right */
-    struct Vec2       tl_point;
-    struct Vec2       br_point;
+    struct Vec2        tl_point;
+    struct Vec2        br_point;
 
-    enum   R_Texture  render_num;
-    struct Vec2       render_off;
-    struct Vec2       render_dim;
+    enum   AnimationId animation;
+    struct Vec2        render_off;
 };
 
 struct RenderLink {
@@ -65,7 +64,6 @@ struct GameState {
     struct Entity player;
     struct Entity ents[256];
     int num_ents;
-
 
     SDL_Texture *R_textures[R_COUNT];
 };
