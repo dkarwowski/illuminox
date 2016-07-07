@@ -245,7 +245,7 @@ UPDATE(Update) /* memory, input */
         state->player.tl_point = (struct Vec2){ 0.4f, 2.0f };
         state->player.br_point = (struct Vec2){ 0.4f, 0.0f };
         state->player.animation = CHARACTER_STAND0;
-        state->player.render_off = (struct Vec2){ -0.5f, -0.5f };
+        state->player.render_off = (struct Vec2){ -0.5f, -1.5f };
         chunk->first->prev->next = &state->player;
         chunk->first->prev = &state->player;
 
@@ -326,6 +326,20 @@ UPDATE(Update) /* memory, input */
 
     state->cam.x = state->player.pos.x;
     state->cam.y = state->player.pos.y;
+
+    for (struct Entity *ent = state->player.chunk->first; ent != NULL; ent = ent->next) {
+        u32 duration = SPRITES[ent->animation].dt;
+        if (duration == 1)
+            continue;
+
+        ent->render_dt += MS_PER_UPDATE;
+        u32 index = SPRITES[ent->animation].index;
+        u32 count = SPRITES[ent->animation].count;
+        if (duration < ent->render_dt) {
+            ent->animation = ent->animation + 1 - ((index + 1 == count) ? count : 0);
+            ent->render_dt -= duration;
+        }
+    }
 }
 
 /**
@@ -348,19 +362,20 @@ RENDER(Render) /* memory, renderer, dt */
 
     if (!state->init) return;
 
-    if (SHEETS[CHARACTER].w != ~0) {
+    if (state->sheets[CHARACTER].w != ~0) {
         int initted = IMG_Init(IMG_INIT_PNG);
         if (initted != IMG_INIT_PNG)
             SDL_LOG("img init failed");
+
         /* TODO(david): automate this */
         SDL_Surface *temp;
         temp = IMG_Load("../res/sprites/character.png");
-        SHEETS[CHARACTER].texture = SDL_CreateTextureFromSurface(renderer, temp);
-        SHEETS[CHARACTER].w = ~0;
+        state->sheets[CHARACTER].texture = SDL_CreateTextureFromSurface(renderer, temp);
+        state->sheets[CHARACTER].w = ~0;
         SDL_FreeSurface(temp);
 
         temp = IMG_Load("../res/sprites/tile_wall.png");
-        SHEETS[TILE_WALL].texture = SDL_CreateTextureFromSurface(renderer, temp);
+        state->sheets[TILE_WALL].texture = SDL_CreateTextureFromSurface(renderer, temp);
         SDL_FreeSurface(temp);
     }
 
@@ -401,28 +416,11 @@ RENDER(Render) /* memory, renderer, dt */
 
         rect.x = (ent->pos.x + ent->render_off.x - state->cam.x) * PIXEL_PERMETERX + 0.5f + (screenw / 2.0f);
         rect.y = (ent->pos.y + ent->render_off.y - state->cam.y) * PIXEL_PERMETERY + 0.5f + (screenh / 2.0f);
-        rect.w = PIXEL_PERMETERX * ((float)(anim->rect.w) / 32.0f); /* TODO(david): solid lines */
+        rect.w = PIXEL_PERMETERX * ((float)(anim->rect.w) / 32.0f); /* TODO(david): not hard coded values */
         rect.h = PIXEL_PERMETERY * ((float)(anim->rect.h) / 24.0f);
         
-        SDL_RenderCopy(renderer, SHEETS[anim->sheet].texture, &anim->rect, &rect);
+        SDL_RenderCopy(renderer, state->sheets[anim->sheet].texture, &anim->rect, &rect);
     }
-
-//    /* render the player */
-//    struct Entity *ent = &state->player;
-//    SDL_Rect player_rect = { (int)(PIXEL_PERMETERX * (ent->pos.x + ent->vel.x * dt - ent->rad.w) + 0.5f),
-//                             (int)(PIXEL_PERMETERY * (ent->pos.y + ent->vel.y * dt - ent->rad.h) + 0.5f),
-//                             (int)(PIXEL_PERMETERX * ent->rad.w * 2.0f + 0.5f),
-//                             (int)(PIXEL_PERMETERY * ent->rad.h * 2.0f + 0.5f) };
-//    SDL_SetRenderDrawColor(renderer, 125, 0, 125, 255);
-//    SDL_RenderFillRect(renderer, &player_rect);
-
-//    /* square to show the movement vactor is working */
-//    SDL_Rect move_vector = { (int)(PIXEL_PERMETER * state->pos.x),
-//                             (int)(PIXEL_PERMETER * state->pos.y),
-//                             (int)(PIXEL_PERMETER * state->vel.x) + 2,
-//                             (int)(PIXEL_PERMETER * state->vel.y) + 2 };
-//    SDL_SetRenderDrawColor(renderer, 0, 125, 125, 255);
-//    SDL_RenderFillRect(renderer, &move_vector);
 
     if (state->console && state->font != NULL) {
         int width, height;

@@ -15,9 +15,6 @@ struct SpriteSheet {
     i32 w, h;
 };
 
-/* list of sprite sheets */
-struct SpriteSheet SHEETS[SpriteSheet_COUNT];
-
 /* tag mapped to animation */
 enum AnimationId {
     TILE_WALL_STAND0,
@@ -37,7 +34,7 @@ struct Animation {
 };
 
 /* animations list */
-struct Animation SPRITES[Anim_COUNT] = {
+static struct Animation SPRITES[Anim_COUNT] = {
     { .rect={ .x=0, .y=0, .w=32, .h=48 }, .dt=1, .sheet=TILE_WALL,.index=0, .count=1 },
     { .rect={ .x=0, .y=0, .w=32, .h=48 }, .dt=100, .sheet=CHARACTER,.index=0, .count=3 },
     { .rect={ .x=32, .y=0, .w=32, .h=48 }, .dt=100, .sheet=CHARACTER,.index=1, .count=3 },

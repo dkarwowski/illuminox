@@ -17,8 +17,6 @@ CONFIGDIR := config
 CONFIGEXT := json
 JSON := $(shell find $(CONFIGDIR) -type f -name *.$(CONFIGEXT))
 
--include $(OBJECTS:.o=.d)
-
 default: $(GAME)
 	@echo -e "\e[1;92m-> Done \e[0m"
 
@@ -33,7 +31,7 @@ $(GAME): $(OBJECTS)
 	@echo -e "\e[1;94m-> Creating libgame.so... \e[0m"
 	$(CC) $^ $(OPTIM) -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
 
-$(BUILDDIR)/%.o: $(SRCDIR)/%.$(SRCEXT)
+$(BUILDDIR)/%.o:
 	@echo -e "\e[1;96m-> Creating $@...\e[0m"
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) $(WFLAGS) -c -o $@ $<
@@ -50,5 +48,7 @@ config:
 clean:
 	@echo -e "\e[1;91m-> Cleaning... \e[0m"
 	rm -r $(BUILDDIR)/* $(TARGETDIR)/*
+
+-include $(OBJECTS:.o=.d)
 
 .PHONY: clean config

@@ -29,6 +29,7 @@ struct Entity {
 
     enum   AnimationId animation;
     struct Vec2        render_off;
+    u32                render_dt;
 };
 
 struct RenderLink {
@@ -66,7 +67,7 @@ struct GameState {
     struct Entity ents[256];
     int num_ents;
 
-    SDL_Texture *R_textures[R_COUNT];
+    struct SpriteSheet sheets[SpriteSheet_COUNT];
 };
 
 #define _GAME_h_

@@ -89,10 +89,6 @@ if __name__ == "__main__":
         lines.append("};")
 
         lines.append("")
-        lines.append("/* list of sprite sheets */")
-        lines.append("struct SpriteSheet SHEETS[SpriteSheet_COUNT];")
-
-        lines.append("")
         lines.append("/* tag mapped to animation */")
         lines.append("enum AnimationId {")
         for t in all_tags:
@@ -112,7 +108,7 @@ if __name__ == "__main__":
 
         lines.append("")
         lines.append("/* animations list */")
-        lines.append("struct Animation SPRITES[Anim_COUNT] = {")
+        lines.append("static struct Animation SPRITES[Anim_COUNT] = {")
         for s in all_sprites:
             lines.append("    " + s + ("," if s != all_sprites[-1] else ""))
         lines.append("};")
