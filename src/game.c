@@ -140,6 +140,20 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
     }
 }
 
+/**
+ * Get a world chunk from the world, and create one if not found and the 
+ * flag is set.
+ *
+ * @world  : the current world
+ * @x      : x coordinate
+ * @y      : y coordinate
+ * @create : whether or not to create one
+ *
+ * Create flag should only be set to true when generating the map in the
+ * first place.
+ *
+ * TODO(david): perhaps only use create in a lazy generation?
+ */
 static
 struct WorldChunk *
 W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
@@ -167,6 +181,14 @@ W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
     return NULL;
 }
 
+/**
+ * Adjust the position and get the correct chunk for the position when moved out
+ * of the current bounds.
+ *
+ * @world : the world containing chunks
+ * @chunk : the original chunk
+ * @pos   : position that may be off
+ */
 static
 struct WorldChunk *
 W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
