@@ -55,6 +55,123 @@ I_ExecuteCommand(struct GameState *state, struct GameInput *input)
 }
 
 /**
+ * Get a world chunk from the world, and create one if not found and the 
+ * flag is set.
+ *
+ * @world  : the current world
+ * @x      : x coordinate
+ * @y      : y coordinate
+ * @create : whether or not to create one
+ *
+ * Create flag should only be set to true when generating the map in the
+ * first place.
+ *
+ * TODO(david): perhaps only use create in a lazy generation?
+ */
+static
+struct WorldChunk *
+W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
+{
+    if (x < 1 || y < 1 || x == ~0 || y == ~0) 
+        return NULL;
+
+    u32 hash = (x + y * 31) % WORLD_HASHSIZE;
+    struct WorldChunk *result = &world->chunks[hash];
+    while (result != NULL) {
+        if (result->next == NULL && (result->x != x || result->y != y) && create) {
+            /* TODO(david): need proper alloc */
+            result->next = calloc(1, sizeof(struct WorldChunk));
+            result = result->next;
+            result->x = x;
+            result->y = y;
+        } 
+        if (result->x == x && result->y == y) {
+            return result;
+        }
+        
+        result = result->next;
+    }
+
+    return NULL;
+}
+
+static
+int
+W_ChunkAddEntity(struct WorldChunk *chunk, struct Entity *ent)
+{
+    if (!chunk)
+        return 1;
+    if (!ent)
+        return 2;
+
+    if (chunk->head == NULL) {
+        chunk->head = ent;
+        chunk->tail = ent;
+    }
+    else {
+        chunk->tail->next = ent;
+    }
+
+    /* we're adding to the end, so this should be NULL */
+    ent->next = NULL;
+    ent->prev = chunk->tail;
+    chunk->tail = ent;
+
+    return 0;
+}
+
+static
+int
+W_ChunkRemoveEntity(struct WorldChunk *chunk, struct Entity *ent)
+{
+    if (!chunk)
+        return 1;
+    if (!ent)
+        return 2;
+
+    if (ent == chunk->head)
+        chunk->head = ent->next;
+    if (ent == chunk->tail)
+        chunk->tail = ent->prev;
+
+    if (ent->prev)
+        ent->prev->next = ent->next;
+    if (ent->next)
+        ent->next->prev = ent->prev;
+
+    return 0;
+}
+
+/**
+ * Adjust the position and get the correct chunk for the position when moved out
+ * of the current bounds.
+ *
+ * @world : the world containing chunks
+ * @chunk : the original chunk
+ * @pos   : position that may be off
+ */
+static
+struct WorldChunk *
+W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
+{
+    u32 world_e[] = { chunk->x, chunk->y };
+    for (int i = 0; i < 2; i++) {
+        if (pos->e[i] < 0.0f) {
+            world_e[i] -= 1;
+            pos->e[i] += 10.0f;
+        } else if (pos->e[i] >= 10.0f) {
+            world_e[i] += 1;
+            pos->e[i] -= 10.0f;
+        }
+    }
+
+    if (world_e[0] != chunk->x || world_e[1] != chunk->y) {
+        return W_GetChunk(world, world_e[0], world_e[1], false);
+    }
+    return chunk;
+}
+
+/**
  * Move an entity with a specific acceleration.
  *
  * @world : the current world
@@ -77,7 +194,7 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
     for (int z = 0; z < 4 && tleft > 0.0f; z++) {
         struct Vec2 normal = {0.0f, 0.0f};
         r32 tmin = 1.0f;
-        for (struct Entity *cmp_ent = ent->chunk->first; cmp_ent != NULL; cmp_ent = cmp_ent->next) {
+        for (struct Entity *cmp_ent = ent->chunk->head; cmp_ent != NULL; cmp_ent = cmp_ent->next) {
             if (cmp_ent == ent)
                 continue;
 
@@ -138,75 +255,13 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
         dpos = V2_Sub(dpos, V2_Mul(V2_Dot(dpos, normal), normal));
         tleft -= tmin;
     }
-}
 
-/**
- * Get a world chunk from the world, and create one if not found and the 
- * flag is set.
- *
- * @world  : the current world
- * @x      : x coordinate
- * @y      : y coordinate
- * @create : whether or not to create one
- *
- * Create flag should only be set to true when generating the map in the
- * first place.
- *
- * TODO(david): perhaps only use create in a lazy generation?
- */
-static
-struct WorldChunk *
-W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
-{
-    if (x < 1 || y < 1 || x == ~0 || y == ~0) 
-        return NULL;
-
-    u32 hash = (x + y * 31) % WORLD_HASHSIZE;
-    struct WorldChunk *result = &world->chunks[hash];
-    while (result != NULL) {
-        if (result->next == NULL && (result->x != x || result->y != y) && create) {
-            /* TODO(david): need proper alloc */
-            result->next = calloc(1, sizeof(struct WorldChunk));
-            result = result->next;
-            result->x = x;
-            result->y = y;
-        } 
-        if (result->x == x && result->y == y) {
-            return result;
-        }
-        
-        result = result->next;
+    struct WorldChunk *new_chunk = W_FixChunk(world, ent->chunk, &ent->pos);
+    if (new_chunk != ent->chunk) {
+        W_ChunkRemoveEntity(ent->chunk, ent);
+        W_ChunkAddEntity(new_chunk, ent);
+        ent->chunk = new_chunk;
     }
-
-    return NULL;
-}
-
-/**
- * Adjust the position and get the correct chunk for the position when moved out
- * of the current bounds.
- *
- * @world : the world containing chunks
- * @chunk : the original chunk
- * @pos   : position that may be off
- */
-static
-struct WorldChunk *
-W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
-{
-    u32 world_e[] = { chunk->x, chunk->y };
-    for (int i = 0; i < 2; i++) {
-        if (pos->e[i] < 0.0f) {
-            world_e[i] -= 1;
-            pos->e[i] += 10.0f;
-        } else if (pos->e[i] >= 10.0f) {
-            world_e[i] += 1;
-            pos->e[i] += 1;
-        }
-    }
-
-    if (world_e[0] != chunk->x || world_e[1] != chunk->y)
-        return W_GetChunk(world, world_e[0], world_e[1], false);
-    return chunk;
 }
 
 /**
@@ -233,10 +288,10 @@ UPDATE(Update) /* memory, input */
 
         struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
         /* ensure first is null when starting */
-        chunk->first = NULL;
+        chunk->head = NULL;
         for (int i = 0; i < 10; i++) {
             for (int j = 0; j < 10; j++) {
-                if (j == 0 || j == 9 || i == 0 || i == 9) {
+                if (j == 0 || j == 9 || i == 0 || (i == 9 && j != 4 && j != 5)) {
                     state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
                                                                      .pos.x = (r32)j + 0.5f,
                                                                      .pos.y = (r32)i + 0.5f,
@@ -247,13 +302,28 @@ UPDATE(Update) /* memory, input */
                                                                      .animation = TILE_WALL_STAND0,
                                                                      .render_off = (struct Vec2){ -0.5f, -1.5f } };
 
-                    if (chunk->first == NULL) {
-                        chunk->first = &state->ents[state->num_ents];
-                        chunk->first->next = chunk->first;
-                        chunk->first->prev = chunk->first;
-                    }
-                    chunk->first->prev->next = &state->ents[state->num_ents];
-                    chunk->first->prev = &state->ents[state->num_ents];
+                    W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
+
+                    state->num_ents++;
+                }
+            }
+        }
+        chunk = W_GetChunk(&state->world, 1, 2, true);
+        chunk->head = NULL;
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10; j++) {
+                if (j == 0 || j == 9 || i == 9 || (i == 0 && j != 4 && j != 5)) {
+                    state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
+                                                                     .pos.x = (r32)j + 0.5f,
+                                                                     .pos.y = (r32)i + 0.5f,
+                                                                     .vel = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .rad = (struct Vec2){ 0.5f, 0.5f },
+                                                                     .tl_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .br_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                     .animation = TILE_WALL_STAND0,
+                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f } };
+
+                    W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
 
                     state->num_ents++;
                 }
@@ -268,8 +338,7 @@ UPDATE(Update) /* memory, input */
         state->player.br_point = (struct Vec2){ 0.4f, 0.0f };
         state->player.animation = CHARACTER_STAND0;
         state->player.render_off = (struct Vec2){ -0.5f, -1.5f };
-        chunk->first->prev->next = &state->player;
-        chunk->first->prev = &state->player;
+        W_ChunkAddEntity(chunk, &state->player);
 
         state->cam.x = state->player.pos.x;
         state->cam.y = state->player.pos.y;
@@ -349,7 +418,7 @@ UPDATE(Update) /* memory, input */
     state->cam.x = state->player.pos.x;
     state->cam.y = state->player.pos.y;
 
-    for (struct Entity *ent = state->player.chunk->first; ent != NULL; ent = ent->next) {
+    for (struct Entity *ent = state->player.chunk->head; ent != NULL; ent = ent->next) {
         u32 duration = SPRITES[ent->animation].dt;
         if (duration == 1)
             continue;
@@ -407,8 +476,8 @@ RENDER(Render) /* memory, renderer, dt */
     /* TODO(david): render the floor */
 
     struct RenderLink *first = calloc(1, sizeof(struct RenderLink));
-    first->ent = state->player.chunk->first;
-    for (struct Entity *ent = state->player.chunk->first->next; ent != NULL; ent = ent->next) {
+    first->ent = state->player.chunk->head;
+    for (struct Entity *ent = state->player.chunk->head->next; ent != NULL; ent = ent->next) {
         struct RenderLink *new = calloc(1, sizeof(struct RenderLink));
         new->ent = ent;
 

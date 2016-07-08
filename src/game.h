@@ -42,7 +42,8 @@ struct WorldChunk {
     u32 x, y;
     struct WorldChunk *next;
 
-    struct Entity *first;
+    struct Entity *head;
+    struct Entity *tail;
 };
 
 #define WORLD_HASHSIZE 2048
