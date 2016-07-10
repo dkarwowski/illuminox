@@ -15,29 +15,29 @@ struct LocalStack {
 };
 
 /* general stacks */
-void   InitStack(struct Stack *stack, void *base, size_t size);
-void   InitSubStack(struct Stack *slave, struct Stack *master, size_t size);
-void   ClearStack(struct Stack *stack);
-size_t RemainingStack(struct Stack *stack);
+void   Z_InitStack(struct Stack *stack, void *base, size_t size);
+void   Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size);
+void   Z_ClearStack(struct Stack *stack);
+size_t Z_RemainingStack(struct Stack *stack);
 
 /* local stack for functions */
-void BeginLocalStack(struct LocalStack *lstack, struct Stack *stack);
-void EndLocalStack(struct LocalStack *lstack);
+void Z_BeginLocalStack(struct LocalStack *lstack, struct Stack *stack);
+void Z_EndLocalStack(struct LocalStack *lstack);
 
 /* zero areas of memory */
-void    ZeroSize(void *base, size_t size);
-#define ZeroStruct(instance)    ZeroSize(&instance, sizeof(instance))
-#define ZeroArray(array, count) ZeroSize((void *)array, sizeof(array[0])*count)
+void    Z_ZeroSize(void *base, size_t size);
+#define Z_ZeroStruct(instance)    ZeroSize(&instance, sizeof(instance))
+#define Z_ZeroArray(array, count) ZeroSize((void *)array, sizeof(array[0])*count)
 
 /* malloc an area of memory */
-void *  PushSize_(struct Stack *stack, size_t size, bool clear);
-#define PushStruct(stack, type, ...)       (type *)PushSize_(stack, sizeof(type), ## __VA_ARGS__ )
-#define PushArray(stack, type, count, ...) (type *)PushSize_(stack, sizeof(type)*count, ## __VA_ARGS__ )
+void *  Z_PushSize_(struct Stack *stack, size_t size, bool clear);
+#define Z_PushStruct(stack, type, ...)       (type *)Z_PushSize_(stack, sizeof(type), ## __VA_ARGS__ )
+#define Z_PushArray(stack, type, count, ...) (type *)Z_PushSize_(stack, sizeof(type)*count, ## __VA_ARGS__ )
 
 /* push memory onto the stack */
-void *  PushCopy_(struct Stack *stack, void *src, size_t size);
-#define PushCopyStruct(stack, src, type)       (type *)PushCopy_(stack, (void *)src, sizeof(type))
-#define PushCopyArray(stack, src, type, count) (type *)PushCopy_(stack, (void *)src, sizeof(type)*count)
+void *  Z_PushCopy_(struct Stack *stack, void *src, size_t size);
+#define Z_PushCopyStruct(stack, src, type)       (type *)Z_PushCopy_(stack, (void *)src, sizeof(type))
+#define Z_PushCopyArray(stack, src, type, count) (type *)Z_PushCopy_(stack, (void *)src, sizeof(type)*count)
 
 #define _MEMORY_h_
 #endif

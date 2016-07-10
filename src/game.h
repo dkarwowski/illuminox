@@ -1,5 +1,6 @@
 #ifndef _GAME_h_
 #include "math.h"
+#include "memory.h"
 #include "game_config.h"
 
 #define PIXEL_PERMETERX 64
@@ -52,11 +53,15 @@ struct WorldChunk {
 #define WORLD_HASHSIZE 2048
 struct WorldState {
     struct WorldChunk chunks[WORLD_HASHSIZE];
+    struct Stack stack;
 };
 
+#define MAX_ENTITIES 1024
 struct GameState {
     bool init;
 
+    struct Stack game_stack;
+    struct Stack temp_stack;
     struct WorldState world;
 
     TTF_Font *font;
@@ -68,7 +73,7 @@ struct GameState {
 
     /* player */
     struct Entity player;
-    struct Entity ents[256];
+    struct Entity ents[MAX_ENTITIES];
     int num_ents;
 
     /* rendering */

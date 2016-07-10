@@ -1,7 +1,7 @@
 #include "memory.h"
 
 void
-InitStack(struct Stack *stack, void *base, size_t size)
+Z_InitStack(struct Stack *stack, void *base, size_t size)
 {
     stack->base  = (u8 *)base;
     stack->size  = size;
@@ -10,28 +10,28 @@ InitStack(struct Stack *stack, void *base, size_t size)
 }
 
 void
-InitSubStack(struct Stack *slave, struct Stack *master, size_t size)
+Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size)
 {
     ASSERT(master->used + size <= master->size);
-    InitStack(slave, master->base + master->used, size);
+    Z_InitStack(slave, master->base + master->used, size);
     master->used += size;
 }
 
 void
-ClearStack(struct Stack *stack)
+Z_ClearStack(struct Stack *stack)
 {
-    InitStack(stack, stack->base, stack->size);
+    Z_InitStack(stack, stack->base, stack->size);
 }
 
 size_t
-RemainingStack(struct Stack *stack)
+Z_RemainingStack(struct Stack *stack)
 {
     size_t result = stack->size - stack->used;
     return result;
 }
 
 void
-BeginLocalStack(struct LocalStack *lstack, struct Stack *stack)
+Z_BeginLocalStack(struct LocalStack *lstack, struct Stack *stack)
 {
     lstack->stack = stack;
     lstack->used  = stack->used;
@@ -39,7 +39,7 @@ BeginLocalStack(struct LocalStack *lstack, struct Stack *stack)
 }
 
 void
-EndLocalStack(struct LocalStack *lstack)
+Z_EndLocalStack(struct LocalStack *lstack)
 {
     struct Stack *stack = lstack->stack;
 
@@ -52,7 +52,7 @@ EndLocalStack(struct LocalStack *lstack)
 }
 
 void
-ZeroSize(void *base, size_t size)
+Z_ZeroSize(void *base, size_t size)
 {
     char *byte = (char *)base;
     while (size--)
@@ -60,7 +60,7 @@ ZeroSize(void *base, size_t size)
 }
 
 void *
-PushSize_(struct Stack *stack, size_t size, bool clear)
+Z_PushSize_(struct Stack *stack, size_t size, bool clear)
 {
     ASSERT((stack->used + size) <= stack->size);
 
@@ -68,13 +68,13 @@ PushSize_(struct Stack *stack, size_t size, bool clear)
     stack->used += size;
 
     if (clear)
-        ZeroSize(result, size);
+        Z_ZeroSize(result, size);
 
     return result;
 }
 
 void *
-PushCopy_(struct Stack *stack, void *src, size_t size)
+Z_PushCopy_(struct Stack *stack, void *src, size_t size)
 {
     ASSERT((stack->used + size) <= stack->size);
 

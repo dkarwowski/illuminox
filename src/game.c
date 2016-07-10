@@ -80,7 +80,7 @@ W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
     while (result != NULL) {
         if (result->next == NULL && (result->x != x || result->y != y) && create) {
             /* TODO(david): need proper alloc */
-            result->next = calloc(1, sizeof(struct WorldChunk));
+            result->next = Z_PushStruct(&world->stack, struct WorldChunk, true);
             result = result->next;
             result->x = x;
             result->y = y;
@@ -286,6 +286,15 @@ UPDATE(Update) /* memory, input */
 
         state->num_ents = 0;
 
+        Z_InitStack( &state->game_stack, 
+                     memory->perm_mem + sizeof(struct GameState),
+                     memory->perm_memsize - sizeof(struct GameState) );
+        Z_InitStack(&state->temp_stack, memory->temp_mem, memory->temp_memsize);
+
+        Z_InitSubStack( &state->world.stack,
+                        &state->game_stack,
+                        Z_RemainingStack(&state->game_stack) );
+
         struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
         /* ensure first is null when starting */
         chunk->head = NULL;
@@ -453,6 +462,9 @@ RENDER(Render) /* memory, renderer, dt */
 
     if (!state->init) return;
 
+    struct LocalStack render_stack;
+    Z_BeginLocalStack(&render_stack, &state->temp_stack);
+
     if (state->sheets[CHARACTER].w != ~0) {
         int initted = IMG_Init(IMG_INIT_PNG);
         if (initted != IMG_INIT_PNG)
@@ -485,7 +497,7 @@ RENDER(Render) /* memory, renderer, dt */
                 continue;
 
             for (struct Entity *ent = chunk->head; ent != NULL; ent = ent->next) {
-                struct RenderLink *new = calloc(1, sizeof(struct RenderLink));
+                struct RenderLink *new = Z_PushStruct(&state->temp_stack, struct RenderLink, true);
                 new->ent = ent;
                 new->pos = (struct Vec2){ent->pos.x + i * 10.0f, ent->pos.y + j * 10.0f};
 
@@ -551,5 +563,7 @@ RENDER(Render) /* memory, renderer, dt */
     }
 
     SDL_RenderPresent(renderer);
+
+    Z_EndLocalStack(&render_stack);
 }
 
