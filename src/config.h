@@ -1,4 +1,6 @@
 #ifndef _CONFIG_h_
+#include <stddef.h>
+#include <stdint.h>
 
 /* ensure there's only one of each bound name */
 #define KEY_BINDING(_def) \
@@ -48,6 +50,13 @@ typedef uintptr_t      uptr;
 #define KILOBYTES(x) (x * 1024)
 #define MEGABYTES(x) (KILOBYTES(x) * 1024)
 #define GIGABYTES(x) (MEGABYTES(x) * 1024)
+
+#ifdef DEBUG
+#include <assert.h>
+#define ASSERT(expr) assert(expr)
+#else
+#define ASSERT(expr) void
+#endif
 
 #define _CONFIG_h_
 #endif

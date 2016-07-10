@@ -33,9 +33,12 @@ struct Entity {
 };
 
 struct RenderLink {
-    struct Entity *ent;
+    struct Entity     *ent;
+
     struct RenderLink *next;
     struct RenderLink *prev;
+
+    struct Vec2        pos;
 };
 
 struct WorldChunk {
@@ -68,6 +71,7 @@ struct GameState {
     struct Entity ents[256];
     int num_ents;
 
+    /* rendering */
     struct SpriteSheet sheets[SpriteSheet_COUNT];
 };
 

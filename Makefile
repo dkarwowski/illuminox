@@ -5,9 +5,8 @@ TARGETDIR := bin
 TARGET := proto
 GAME := libgame
 
-SRCEXT := c
-SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
-OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.$(SRCEXT)=.o))
+SOURCES := $(shell find $(SRCDIR) -type f -name *.c)
+OBJECTS := $(patsubst $(SRCDIR)/%,$(BUILDDIR)/%,$(SOURCES:.c=.o))
 OPTIM  :=
 CFLAGS := -fPIC $(shell sdl2-config --cflags) -D_THREAD_SAFE $(OPTIM)
 WFLAGS := -Wall -Wno-missing-braces -Wno-unused-function -DDEBUG -g
@@ -31,7 +30,7 @@ $(GAME): $(OBJECTS)
 	@echo -e "\e[1;94m-> Creating libgame.so... \e[0m"
 	$(CC) $^ $(OPTIM) -shared -o $(TARGETDIR)/$@.so -Wl,-soname,$@.so $(LIBS)
 
-$(BUILDDIR)/%.o:
+$(BUILDDIR)/%.o: $(SRCDIR)/%.c
 	@echo -e "\e[1;96m-> Creating $@...\e[0m"
 	@mkdir -p $(BUILDDIR)
 	$(CC) $(CFLAGS) $(WFLAGS) -c -o $@ $<

@@ -475,27 +475,40 @@ RENDER(Render) /* memory, renderer, dt */
 
     /* TODO(david): render the floor */
 
-    struct RenderLink *first = calloc(1, sizeof(struct RenderLink));
-    first->ent = state->player.chunk->head;
-    for (struct Entity *ent = state->player.chunk->head->next; ent != NULL; ent = ent->next) {
-        struct RenderLink *new = calloc(1, sizeof(struct RenderLink));
-        new->ent = ent;
+    struct RenderLink *first = NULL;
+    u32 chunkx = state->player.chunk->x;
+    u32 chunky = state->player.chunk->y;
+    for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
+            struct WorldChunk *chunk = W_GetChunk(&state->world, chunkx + i, chunky + j, false);
+            if (chunk == NULL)
+                continue;
 
-        for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
-            if (ren->ent->pos.y > ent->pos.y) {
-                if (ren == first) {
-                    first = new;
-                    ren->prev = first;
-                } else {
-                    ren->prev->next = new;
-                    ren->prev = ren->prev->next;
+            for (struct Entity *ent = chunk->head; ent != NULL; ent = ent->next) {
+                struct RenderLink *new = calloc(1, sizeof(struct RenderLink));
+                new->ent = ent;
+                new->pos = (struct Vec2){ent->pos.x + i * 10.0f, ent->pos.y + j * 10.0f};
+
+                for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
+                    if (ren->pos.y > new->pos.y) {
+                        if (ren == first) {
+                            first = new;
+                            ren->prev = first;
+                        } else {
+                            ren->prev->next = new;
+                            ren->prev = ren->prev->next;
+                        }
+                        ren->prev->next = ren;
+                        break;
+                    } else if (ren->next == NULL) {
+                        ren->next = new;
+                        new->prev = ren;
+                        break;
+                    }
                 }
-                ren->prev->next = ren;
-                break;
-            } else if (ren->next == NULL) {
-                ren->next = new;
-                new->prev = ren;
-                break;
+
+                if (first == NULL)
+                    first = new;
             }
         }
     }
@@ -505,11 +518,11 @@ RENDER(Render) /* memory, renderer, dt */
         struct Entity *ent = ren->ent;
         struct Animation *anim = &SPRITES[ent->animation];
 
-        rect.x = (ent->pos.x + ent->render_off.x - state->cam.x) * PIXEL_PERMETERX + 0.5f + (screenw / 2.0f);
-        rect.y = (ent->pos.y + ent->render_off.y - state->cam.y) * PIXEL_PERMETERY + 0.5f + (screenh / 2.0f);
+        rect.x = (ren->pos.x + ent->render_off.x - state->cam.x) * PIXEL_PERMETERX + 0.5f + (screenw / 2.0f);
+        rect.y = (ren->pos.y + ent->render_off.y - state->cam.y) * PIXEL_PERMETERY + 0.5f + (screenh / 2.0f);
         rect.w = PIXEL_PERMETERX * ((float)(anim->rect.w) / 32.0f); /* TODO(david): not hard coded values */
         rect.h = PIXEL_PERMETERY * ((float)(anim->rect.h) / 24.0f);
-        
+
         SDL_RenderCopy(renderer, state->sheets[anim->sheet].texture, &anim->rect, &rect);
     }
 
