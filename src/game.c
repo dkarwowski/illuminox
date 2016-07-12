@@ -171,6 +171,61 @@ W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
     return chunk;
 }
 
+static
+void
+W_GenerateWorld(struct GameState *state)
+{
+    struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
+
+    struct LocalStack lstack;
+    Z_BeginLocalStack(&lstack, &state->temp_stack);
+
+    /* ensure first is null when starting */
+    chunk->head = NULL;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (j == 0 || j == 9 || i == 0 || (i == 9 && j != 4 && j != 5)) {
+                state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
+                                                                 .pos.x = (r32)j + 0.5f,
+                                                                 .pos.y = (r32)i + 0.5f,
+                                                                 .vel = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .rad = (struct Vec2){ 0.5f, 0.5f },
+                                                                 .tl_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .br_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .animation = TILE_WALL_STAND0,
+                                                                 .render_off = (struct Vec2){ -0.5f, -1.5f } };
+
+                W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
+
+                state->num_ents++;
+            }
+        }
+    }
+    chunk = W_GetChunk(&state->world, 1, 2, true);
+    chunk->head = NULL;
+    for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 10; j++) {
+            if (j == 0 || j == 9 || i == 9 || (i == 0 && j != 4 && j != 5)) {
+                state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
+                                                                 .pos.x = (r32)j + 0.5f,
+                                                                 .pos.y = (r32)i + 0.5f,
+                                                                 .vel = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .rad = (struct Vec2){ 0.5f, 0.5f },
+                                                                 .tl_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .br_point = (struct Vec2){ 0.0f, 0.0f },
+                                                                 .animation = TILE_WALL_STAND0,
+                                                                 .render_off = (struct Vec2){ -0.5f, -1.5f } };
+
+                W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
+
+                state->num_ents++;
+            }
+        }
+    }
+
+    Z_EndLocalStack(&lstack);
+}
+
 /**
  * Move an entity with a specific acceleration.
  *
@@ -295,51 +350,9 @@ UPDATE(Update) /* memory, input */
                         &state->game_stack,
                         Z_RemainingStack(&state->game_stack) );
 
-        struct WorldChunk *chunk = W_GetChunk(&state->world, 1, 1, true);
-        /* ensure first is null when starting */
-        chunk->head = NULL;
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                if (j == 0 || j == 9 || i == 0 || (i == 9 && j != 4 && j != 5)) {
-                    state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
-                                                                     .pos.x = (r32)j + 0.5f,
-                                                                     .pos.y = (r32)i + 0.5f,
-                                                                     .vel = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .rad = (struct Vec2){ 0.5f, 0.5f },
-                                                                     .tl_point = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .br_point = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .animation = TILE_WALL_STAND0,
-                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f } };
+        W_GenerateWorld(state);
 
-                    W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
-
-                    state->num_ents++;
-                }
-            }
-        }
-        chunk = W_GetChunk(&state->world, 1, 2, true);
-        chunk->head = NULL;
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10; j++) {
-                if (j == 0 || j == 9 || i == 9 || (i == 0 && j != 4 && j != 5)) {
-                    state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
-                                                                     .pos.x = (r32)j + 0.5f,
-                                                                     .pos.y = (r32)i + 0.5f,
-                                                                     .vel = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .rad = (struct Vec2){ 0.5f, 0.5f },
-                                                                     .tl_point = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .br_point = (struct Vec2){ 0.0f, 0.0f },
-                                                                     .animation = TILE_WALL_STAND0,
-                                                                     .render_off = (struct Vec2){ -0.5f, -1.5f } };
-
-                    W_ChunkAddEntity(chunk, &state->ents[state->num_ents]);
-
-                    state->num_ents++;
-                }
-            }
-        }
-
-        state->player.chunk = chunk;
+        state->player.chunk = W_GetChunk(&state->world, 1, 2, false);
         state->player.pos = (struct Vec2){ 5.0f, 5.0f };
         state->player.vel = (struct Vec2){ 0.0f, 0.0f };
         state->player.rad = (struct Vec2){ 0.35f, 0.2f };
@@ -347,7 +360,7 @@ UPDATE(Update) /* memory, input */
         state->player.br_point = (struct Vec2){ 0.4f, 0.0f };
         state->player.animation = CHARACTER_STAND0;
         state->player.render_off = (struct Vec2){ -0.5f, -1.5f };
-        W_ChunkAddEntity(chunk, &state->player);
+        W_ChunkAddEntity(state->player.chunk, &state->player);
 
         state->cam.x = state->player.pos.x;
         state->cam.y = state->player.pos.y;

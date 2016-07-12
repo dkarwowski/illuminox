@@ -50,7 +50,8 @@ struct WorldChunk {
     struct Entity *tail;
 };
 
-#define WORLD_HASHSIZE 2048
+#define WORLD_HASHSIZE (2048)
+
 struct WorldState {
     struct WorldChunk chunks[WORLD_HASHSIZE];
     struct Stack stack;
