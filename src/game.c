@@ -95,6 +95,13 @@ W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
     return NULL;
 }
 
+/**
+ * Add an entity to a chunk
+ *
+ * @chunk  : what to add to
+ * @ent    : entity to add
+ * @return : 0 on success, else error val if there is one
+ */
 static
 int
 W_ChunkAddEntity(struct WorldChunk *chunk, struct Entity *ent)
@@ -120,6 +127,13 @@ W_ChunkAddEntity(struct WorldChunk *chunk, struct Entity *ent)
     return 0;
 }
 
+/**
+ * Remove an entity from achunk
+ *
+ * @chunk  : the chunk to remove from
+ * @ent    : entity to remove
+ * @return : 0 on success, else some error value
+ */
 static
 int
 W_ChunkRemoveEntity(struct WorldChunk *chunk, struct Entity *ent)
@@ -171,6 +185,11 @@ W_FixChunk(struct WorldState *world, struct WorldChunk *chunk, struct Vec2 *pos)
     return chunk;
 }
 
+/**
+ * Generate a world for the given state
+ *
+ * @state : game state struct where we add the world
+ */
 static
 void
 W_GenerateWorld(struct GameState *state)
