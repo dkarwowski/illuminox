@@ -44,7 +44,7 @@ def load_file(filename):
     return ( dest_name.upper(), tags, sprites )
 
 if __name__ == "__main__":
-    dest_file = "./src/game_config.h" # for configuration
+    dest_file = "./src/render_config" # for configuration
 
     arg_count = len(sys.argv)
     if arg_count < 2:
@@ -65,60 +65,68 @@ if __name__ == "__main__":
         all_tags.extend(tags)
         all_sprites.extend(sprites)
 
-    lines = []
-    with open(dest_file, 'r') as dest:
+    header = []
+    source = []
+    with open(dest_file + ".h", 'r') as dest:
         autogen = "MAKE AUTOGEN"
         for line in dest:
-            lines.append(line.rstrip())
+            header.append(line.rstrip())
             if autogen in line:
                 break
 
-        lines.append("")
-        lines.append("/* all sprite sheets */")
-        lines.append("enum SpriteSheetId {")
+        header.append("")
+        header.append("/* all sprite sheets */")
+        header.append("enum SpriteSheetId {")
         for s in all_sheets:
-            lines.append("    " + s + ",")
-        lines.append("    SpriteSheet_COUNT")
-        lines.append("};")
+            header.append("    " + s + ",")
+        header.append("    SpriteSheet_COUNT")
+        header.append("};")
 
-        lines.append("")
-        lines.append("/* sprite sheet struct */")
-        lines.append("struct SpriteSheet {")
-        lines.append("    SDL_Texture *texture;")
-        lines.append("    i32 w, h;")
-        lines.append("};")
+        header.append("")
+        header.append("/* sprite sheet struct */")
+        header.append("struct SpriteSheet {")
+        header.append("    SDL_Texture *texture;")
+        header.append("    i32 w, h;")
+        header.append("};")
 
-        lines.append("")
-        lines.append("/* tag mapped to animation */")
-        lines.append("enum AnimationId {")
+        header.append("")
+        header.append("/* tag mapped to animation */")
+        header.append("enum AnimationId {")
         for t in all_tags:
-            lines.append("    " + t + ",")
-        lines.append("    Anim_COUNT")
-        lines.append("};")
+            header.append("    " + t + ",")
+        header.append("    Anim_COUNT")
+        header.append("};")
 
-        lines.append("")
-        lines.append("/* struct for animations */")
-        lines.append("struct Animation {")
-        lines.append("    SDL_Rect rect;")
-        lines.append("    enum SpriteSheetId sheet;")
-        lines.append("    u32 dt;")
-        lines.append("    u32 index;")
-        lines.append("    u8 count;")
-        lines.append("};")
+        header.append("")
+        header.append("/* struct for animations */")
+        header.append("struct Animation {")
+        header.append("    SDL_Rect rect;")
+        header.append("    enum SpriteSheetId sheet;")
+        header.append("    u32 dt;")
+        header.append("    u32 index;")
+        header.append("    u8 count;")
+        header.append("};")
 
-        lines.append("")
-        lines.append("/* animations list */")
-        lines.append("static struct Animation SPRITES[Anim_COUNT] = {")
+        header.append("")
+        header.append("/* animations list */")
+        header.append("extern struct Animation SPRITES[Anim_COUNT];")
+
+        header.append("")
+        header.append("#endif")
+        
+        source.append("")
+        source.append("#include \"" + dest_file.split("/")[-1] + ".h\"")
+
+        source.append("struct Animation SPRITES[Anim_COUNT] = {")
         for s in all_sprites:
-            lines.append("    " + s + ("," if s != all_sprites[-1] else ""))
-        lines.append("};")
+            source.append("    " + s + ("," if s != all_sprites[-1] else ""))
+        source.append("};")
 
-        lines.append("")
-        lines.append("#define _GAME_CONFIG_h_")
-        lines.append("#endif")
+    with open(dest_file + ".h", 'w') as dest:
+        dest.write("\n".join(header))
 
-    with open(dest_file, 'w') as dest:
-        dest.write("\n".join(lines))
+    with open(dest_file + ".c", "w") as dest:
+        dest.write("\n".join(source))
 
 # { rect, dt, anim, index }
 

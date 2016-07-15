@@ -1,4 +1,8 @@
 #ifndef _MATH_h_
+#define _MATH_h_
+
+#include <math.h>
+#include "config.h"
 
 struct Vec2 {
     union {
@@ -142,5 +146,4 @@ V3_Hadamard(struct Vec3 a, struct Vec3 b)
     return result;
 }
 
-#define _MATH_h_
 #endif

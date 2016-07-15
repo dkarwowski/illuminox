@@ -1,4 +1,6 @@
 #ifndef _MEMORY_h_
+#define _MEMORY_h_
+
 #include "config.h"
 
 struct Stack {
@@ -39,5 +41,4 @@ void *  Z_PushCopy_(struct Stack *stack, void *src, size_t size);
 #define Z_PushCopyStruct(stack, src, type)       (type *)Z_PushCopy_(stack, (void *)src, sizeof(type))
 #define Z_PushCopyArray(stack, src, type, count) (type *)Z_PushCopy_(stack, (void *)src, sizeof(type)*count)
 
-#define _MEMORY_h_
 #endif

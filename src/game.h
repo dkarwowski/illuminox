@@ -1,7 +1,11 @@
 #ifndef _GAME_h_
+#define _GAME_h_
+
+#include <SDL2/SDL_ttf.h>
+
+#include "render_config.h"
 #include "math.h"
 #include "memory.h"
-#include "game_config.h"
 
 #define PIXEL_PERMETERX 64
 #define PIXEL_PERMETERY 48
@@ -42,28 +46,13 @@ struct RenderLink {
     struct Vec2        pos;
 };
 
-struct WorldChunk {
-    u32 x, y;
-    struct WorldChunk *next;
-
-    struct Entity *head;
-    struct Entity *tail;
-};
-
-#define WORLD_HASHSIZE (2048)
-
-struct WorldState {
-    struct WorldChunk chunks[WORLD_HASHSIZE];
-    struct Stack stack;
-};
-
 #define MAX_ENTITIES 1024
 struct GameState {
     bool init;
 
     struct Stack game_stack;
     struct Stack temp_stack;
-    struct WorldState world;
+    struct WorldState *world;
 
     TTF_Font *font;
 
@@ -81,5 +70,4 @@ struct GameState {
     struct SpriteSheet sheets[SpriteSheet_COUNT];
 };
 
-#define _GAME_h_
 #endif

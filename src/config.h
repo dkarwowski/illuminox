@@ -1,4 +1,6 @@
 #ifndef _CONFIG_h_
+#define _CONFIG_h_
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -58,5 +60,4 @@ typedef uintptr_t      uptr;
 #define ASSERT(expr) void
 #endif
 
-#define _CONFIG_h_
 #endif

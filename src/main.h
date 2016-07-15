@@ -1,4 +1,6 @@
 #ifndef _MAIN_h_
+#define _MAIN_h_
+
 #include "config.h"
 
 /* Consider moving this stuff out to it's own file? */
@@ -85,5 +87,4 @@ struct GameLib {
     Render_t *Render;
 };
 
-#define _MAIN_h_
 #endif
