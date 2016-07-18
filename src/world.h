@@ -4,6 +4,8 @@
 #include "config.h"
 #include "game.h"
 
+#define W_CHUNK_DIM 11
+
 struct WorldChunk {
     u32 x, y;
     struct WorldChunk *next;

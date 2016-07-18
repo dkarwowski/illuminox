@@ -120,10 +120,10 @@ W_FixChunkCreate(struct WorldState *world, struct WorldChunk *chunk, struct Vec2
     for (int i = 0; i < 2; i++) {
         if (pos->e[i] < 0.0f) {
             world_e[i] -= 1;
-            pos->e[i] += 10.0f;
-        } else if (pos->e[i] >= 10.0f) {
+            pos->e[i] += W_CHUNK_DIM;
+        } else if (pos->e[i] >= W_CHUNK_DIM) {
             world_e[i] += 1;
-            pos->e[i] -= 10.0f;
+            pos->e[i] -= W_CHUNK_DIM;
         }
     }
 
@@ -162,9 +162,9 @@ W_GenerateWorld(struct GameState *state)
 
     /* ensure first is null when starting */
     chunk->head = NULL;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            if (j == 0 || j == 9 || i == 0 || (i == 9 && j != 4 && j != 5)) {
+    for (int i = 0; i < W_CHUNK_DIM; i++) {
+        for (int j = 0; j < W_CHUNK_DIM; j++) {
+            if (j == 0 || j == W_CHUNK_DIM - 1 || i == 0 || (i == (W_CHUNK_DIM - 1) && j != 5)) {
                 state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
                                                                  .pos.x = (r32)j + 0.5f,
                                                                  .pos.y = (r32)i + 0.5f,
@@ -183,9 +183,9 @@ W_GenerateWorld(struct GameState *state)
     }
     chunk = W_GetChunk(state->world, 1, 2, true);
     chunk->head = NULL;
-    for (int i = 0; i < 10; i++) {
-        for (int j = 0; j < 10; j++) {
-            if (j == 0 || j == 9 || i == 9 || (i == 0 && j != 4 && j != 5)) {
+    for (int i = 0; i < W_CHUNK_DIM; i++) {
+        for (int j = 0; j < W_CHUNK_DIM; j++) {
+            if (j == 0 || j == W_CHUNK_DIM - 1 || i == W_CHUNK_DIM - 1 ) {
                 state->ents[state->num_ents] = (struct Entity) { .chunk = chunk,
                                                                  .pos.x = (r32)j + 0.5f,
                                                                  .pos.y = (r32)i + 0.5f,

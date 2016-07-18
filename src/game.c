@@ -79,6 +79,7 @@ Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc)
     for (int z = 0; z < 4 && tleft > 0.0f; z++) {
         struct Vec2 normal = {0.0f, 0.0f};
         r32 tmin = 1.0f;
+        /* TODO(david): MUST HANDLE OTHER CHUNKS */
         for (struct Entity *cmp_ent = ent->chunk->head; cmp_ent != NULL; cmp_ent = cmp_ent->next) {
             if (cmp_ent == ent)
                 continue;
@@ -344,7 +345,7 @@ RENDER(Render) /* memory, renderer, dt */
             for (struct Entity *ent = chunk->head; ent != NULL; ent = ent->next) {
                 struct RenderLink *new = Z_PushStruct(&state->temp_stack, struct RenderLink, true);
                 new->ent = ent;
-                new->pos = (struct Vec2){ent->pos.x + i * 10.0f, ent->pos.y + j * 10.0f};
+                new->pos = (struct Vec2){ent->pos.x + i * W_CHUNK_DIM, ent->pos.y + j * W_CHUNK_DIM};
 
                 for (struct RenderLink *ren = first; ren != NULL; ren = ren->next) {
                     if (ren->pos.y > new->pos.y) {
