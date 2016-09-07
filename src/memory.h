@@ -3,13 +3,7 @@
 
 #include "config.h"
 
-struct Stack {
-    u8 *base;
-    size_t size;
-    size_t used;
-
-    u32 count;
-};
+struct Stack;
 
 struct LocalStack {
     struct Stack *stack;
@@ -17,10 +11,10 @@ struct LocalStack {
 };
 
 /* general stacks */
-void   Z_InitStack(struct Stack *stack, void *base, size_t size);
-void   Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size);
-void   Z_ClearStack(struct Stack *stack);
-size_t Z_RemainingStack(struct Stack *stack);
+struct Stack *Z_NewStack(void *base, size_t size);
+struct Stack *Z_NewSubStack(struct Stack *master, size_t size);
+void          Z_ClearStack(struct Stack *stack);
+size_t        Z_RemainingStack(struct Stack *stack);
 
 /* local stack for functions */
 void Z_BeginLocalStack(struct LocalStack *lstack, struct Stack *stack);

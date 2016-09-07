@@ -29,7 +29,7 @@ W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create)
     while (result != NULL) {
         if (result->next == NULL && (result->x != x || result->y != y) && create) {
             /* TODO(david): need proper alloc */
-            result->next = Z_PushStruct(&world->stack, struct WorldChunk, true);
+            result->next = Z_PushStruct(world->stack, struct WorldChunk, true);
             result = result->next;
             result->x = x;
             result->y = y;
@@ -158,7 +158,7 @@ W_GenerateWorld(struct GameState *state)
     struct WorldChunk *chunk = W_GetChunk(state->world, 1, 1, true);
 
     struct LocalStack lstack;
-    Z_BeginLocalStack(&lstack, &state->temp_stack);
+    Z_BeginLocalStack(&lstack, state->temp_stack);
 
     /* ensure first is null when starting */
     chunk->head = NULL;

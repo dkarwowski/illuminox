@@ -173,16 +173,15 @@ UPDATE(Update) /* memory, input */
 
         state->num_ents = 0;
 
-        Z_InitStack( &state->game_stack, 
-                     memory->perm_mem + sizeof(struct GameState),
-                     memory->perm_memsize - sizeof(struct GameState) );
-        Z_InitStack(&state->temp_stack, memory->temp_mem, memory->temp_memsize);
+        state->game_stack = Z_NewStack( memory->perm_mem + sizeof(struct GameState),
+                                        memory->perm_memsize - sizeof(struct GameState) );
+        state->temp_stack = Z_NewStack( memory->temp_mem,
+                                        memory->temp_memsize);
 
         /* TODO(david): change the way the stack is set up */
-        state->world = Z_PushStruct(&state->game_stack, struct WorldState, true);
-        Z_InitSubStack( &state->world->stack,
-                        &state->game_stack,
-                        Z_RemainingStack(&state->game_stack) );
+        state->world = Z_PushStruct(state->game_stack, struct WorldState, true);
+        state->world->stack = Z_NewSubStack( state->game_stack,
+                                             Z_RemainingStack(state->game_stack) );
 
         W_GenerateWorld(state);
 
@@ -310,7 +309,7 @@ RENDER(Render) /* memory, renderer, dt */
     if (!state->init) return;
 
     struct LocalStack render_stack;
-    Z_BeginLocalStack(&render_stack, &state->temp_stack);
+    Z_BeginLocalStack(&render_stack, state->temp_stack);
 
     if (state->sheets[CHARACTER].w != ~0) {
         int initted = IMG_Init(IMG_INIT_PNG);
@@ -344,7 +343,7 @@ RENDER(Render) /* memory, renderer, dt */
                 continue;
 
             for (struct Entity *ent = chunk->head; ent != NULL; ent = ent->next) {
-                struct RenderLink *new = Z_PushStruct(&state->temp_stack, struct RenderLink, true);
+                struct RenderLink *new = Z_PushStruct(state->temp_stack, struct RenderLink, true);
                 new->ent = ent;
                 new->pos = (struct Vec2){ent->pos.x + i * W_CHUNK_DIM, ent->pos.y + j * W_CHUNK_DIM};
 

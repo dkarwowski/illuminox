@@ -22,7 +22,7 @@ struct WorldChunk {
 
 struct WorldState {
     struct WorldChunk chunks[WORLD_HASHSIZE];
-    struct Stack stack;
+    struct Stack *stack;
 };
 
 struct WorldChunk * W_GetChunk(struct WorldState *world, u32 x, u32 y, bool create);

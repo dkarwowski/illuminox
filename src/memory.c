@@ -1,5 +1,14 @@
 #include "memory.h"
 
+struct Stack {
+    u8 *base;
+    size_t size;
+    size_t used;
+
+    u32 count;
+};
+
+static
 void
 Z_InitStack(struct Stack *stack, void *base, size_t size)
 {
@@ -9,12 +18,29 @@ Z_InitStack(struct Stack *stack, void *base, size_t size)
     stack->count = 0;
 }
 
+static
 void
 Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size)
 {
-    ASSERT(master->used + size <= master->size);
+    ASSERT(size > 0 && master->used + size <= master->size);
     Z_InitStack(slave, master->base + master->used, size);
     master->used += size;
+}
+
+struct Stack *
+Z_NewStack(void *base, size_t size)
+{
+    struct Stack *result = base;
+    Z_InitStack(result, (u8 *)base + sizeof(struct Stack), size - sizeof(struct Stack));
+    return result;
+}
+
+struct Stack *
+Z_NewSubStack(struct Stack *master, size_t size)
+{
+    struct Stack *slave = Z_PushStruct(master, struct Stack, true);
+    Z_InitSubStack(slave, master, size - sizeof(struct Stack));
+    return slave;
 }
 
 void
