@@ -23,6 +23,10 @@
 #define SEC_PER_UPDATE (1.0f/1000.0f * MS_PER_UPDATE)
 #define GOAL_FPS 60
 
+#define MIN(a, b) ((a < b) ? a : b)
+#define MAX(a, b) ((a > b) ? a : b)
+#define SIGN(a) ((0.0001f < a) - (a < -0.0001f))
+
 /* define true and false stuff here, no stdbool */
 #define true          1
 #define false         0

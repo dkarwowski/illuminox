@@ -2,6 +2,11 @@
 #define _ENTITY_h_
 
 struct WorldChunk;
+struct WorldState;
+
+#include "config.h"
+#include "math.h"
+#include "render_config.h"
 
 struct Entity {
     struct WorldChunk  *chunk;
@@ -21,5 +26,7 @@ struct Entity {
     struct Vec2        render_off;
     u32                render_dt;
 };
+
+void Move(struct WorldState *world, struct Entity *ent, struct Vec2 acc);
 
 #endif
