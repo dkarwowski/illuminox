@@ -22,7 +22,7 @@ static
 void
 Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size)
 {
-    ASSERT(size > 0 && master->used + size <= master->size);
+    ASSERT(master->used + size <= master->size);
     Z_InitStack(slave, master->base + master->used, size);
     master->used += size;
 }
@@ -30,6 +30,7 @@ Z_InitSubStack(struct Stack *slave, struct Stack *master, size_t size)
 struct Stack *
 Z_NewStack(void *base, size_t size)
 {
+    ASSERT(size > sizeof(struct Stack));
     struct Stack *result = base;
     Z_InitStack(result, (u8 *)base + sizeof(struct Stack), size - sizeof(struct Stack));
     return result;
@@ -38,6 +39,7 @@ Z_NewStack(void *base, size_t size)
 struct Stack *
 Z_NewSubStack(struct Stack *master, size_t size)
 {
+    ASSERT(size > sizeof(struct Stack));
     struct Stack *slave = Z_PushStruct(master, struct Stack, true);
     Z_InitSubStack(slave, master, size - sizeof(struct Stack));
     return slave;
