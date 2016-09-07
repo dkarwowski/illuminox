@@ -6,6 +6,7 @@
 #include "math.h"
 #include "render_config.h"
 #include "world.h"
+#include "entity.h"
 
 #include "game.h"
 

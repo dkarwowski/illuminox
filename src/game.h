@@ -6,6 +6,7 @@
 #include "render_config.h"
 #include "math.h"
 #include "memory.h"
+#include "entity.h"
 
 #define PIXEL_PERMETERX 64
 #define PIXEL_PERMETERY 48
@@ -16,25 +17,6 @@ enum R_Texture {
     R_wall = 2,
 
     R_COUNT
-};
-
-struct Entity {
-    struct WorldChunk  *chunk;
-
-    struct Entity      *prev;
-    struct Entity      *next;
-
-    struct Vec2        pos;
-    struct Vec2        vel;
-    struct Vec2        rad; /* floor radius */
-
-    /* offset from pos to top left, then bot right */
-    struct Vec2        tl_point;
-    struct Vec2        br_point;
-
-    enum   AnimationId animation;
-    struct Vec2        render_off;
-    u32                render_dt;
 };
 
 struct RenderLink {

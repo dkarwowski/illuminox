@@ -2,9 +2,13 @@
 #define _WORLD_h_
 
 #include "config.h"
-#include "game.h"
+#include "math.h"
+#include "memory.h"
 
-#define W_CHUNK_DIM 11
+struct Entity;
+struct GameState;
+
+#define W_CHUNK_DIM (11)
 
 struct WorldChunk {
     u32 x, y;
